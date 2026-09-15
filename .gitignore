@@ -1,0 +1,30 @@
+# Virtual environment
+venv/
+.env
+
+# Datasets (too big)
+datasets/
+*.jpg
+*.jpeg
+*.png
+*.xml
+
+# Training outputs
+runs/
+*.pt
+!models/*.onnx          # keep the final ONNX
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
