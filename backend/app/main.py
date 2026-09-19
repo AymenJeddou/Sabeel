@@ -112,7 +112,8 @@ async def create_report(
         )
 
     return ReportCreatedResponse(
-        report_id=report_id, device_report_id=device_report_id, status=status, score=score
+        report_id=report_id, device_report_id=device_report_id, status=status, score=score,
+        sheet_summary=sheet_text, target_office=target_office,
     )
 
 

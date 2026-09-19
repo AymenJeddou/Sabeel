@@ -11,6 +11,12 @@ class ReportCreatedResponse(BaseModel):
     device_report_id: str
     status: str
     score: Optional[int] = None
+    # Additive fields beyond Section 4.5's illustrative shape -- populated
+    # only when the synchronous RAG call succeeds this request. Not a shape
+    # violation: field names/types elsewhere are unchanged, this is extra
+    # information a real async WP3 implementation wouldn't have yet.
+    sheet_summary: Optional[str] = None
+    target_office: Optional[str] = None
 
 
 class MapPoint(BaseModel):
