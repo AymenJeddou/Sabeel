@@ -1,0 +1,39 @@
+doc_title: "MVP engineering placeholder -- routes urbaines secondaires"
+is_placeholder: true
+
+rules:
+  - rule_id: PH-URB-SEC-001
+    road_type: urbain_secondaire
+    section: "Seuil d'urgence -- sévérité 4-5"
+    lang: fr
+    severity_min: 4
+    target_office: Municipality
+    source: "MVP engineering placeholder (not a real statute)"
+    text: >
+      Sur une rue résidentielle ou de quartier, un nid de poule de sévérité 4
+      ou 5 doit être planifié pour réparation sous 7 jours ouvrés, avec
+      signalisation provisoire si le trafic piéton est important.
+
+  - rule_id: PH-URB-SEC-002
+    road_type: urbain_secondaire
+    section: "Méthode de réparation -- sévérité 3"
+    lang: fr
+    severity_min: 3
+    target_office: Municipality
+    source: "MVP engineering placeholder (not a real statute)"
+    text: >
+      Pour un nid de poule de sévérité 3 sur une rue secondaire à trafic
+      modéré, un colmatage à froid planifié dans le cycle d'entretien
+      mensuel du service technique est suffisant.
+
+  - rule_id: PH-URB-SEC-003
+    road_type: urbain_secondaire
+    section: "Regroupement des interventions"
+    lang: fr
+    severity_min: 1
+    target_office: Municipality
+    source: "MVP engineering placeholder (not a real statute)"
+    text: >
+      Les nids de poule de sévérité 1-2 sur rues secondaires sont regroupés
+      par quartier et traités lors de la prochaine campagne d'entretien
+      plutôt qu'en intervention isolée.
