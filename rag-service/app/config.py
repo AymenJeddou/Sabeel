@@ -10,8 +10,11 @@ _ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(_ENV_PATH)
 
 HF_API_TOKEN = os.getenv("HF_API_TOKEN", "")
-HF_MODEL_PRIMARY = os.getenv("HF_MODEL_PRIMARY", "Qwen/Qwen2.5-7B-Instruct")
-HF_MODEL_BACKUP = os.getenv("HF_MODEL_BACKUP", "meta-llama/Llama-3.2-3B-Instruct")
+# Verified against the live HF Inference Providers API on 2026-09-19 -- see
+# .env.example for availability/latency notes and models that were NOT
+# available and should not be assumed.
+HF_MODEL_PRIMARY = os.getenv("HF_MODEL_PRIMARY", "meta-llama/Llama-3.1-8B-Instruct")
+HF_MODEL_BACKUP = os.getenv("HF_MODEL_BACKUP", "Qwen/Qwen2.5-72B-Instruct")
 
 CHROMA_DB_PATH = os.getenv("CHROMA_DB_PATH", "./chroma_db")
 COLLECTION_NAME = "road_rules_v1"

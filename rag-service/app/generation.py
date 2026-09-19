@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 
 from huggingface_hub import InferenceClient
 from huggingface_hub.errors import HfHubHTTPError
@@ -9,6 +10,14 @@ from huggingface_hub.errors import HfHubHTTPError
 from . import config
 
 logger = logging.getLogger(__name__)
+
+# huggingface_hub's own `timeout=` kwarg does not reliably bound
+# chat_completion() against the router endpoint in practice (observed
+# hanging well past the configured value during Sprint 1 testing) -- a
+# thread-pool wall-clock timeout is used instead as the real, unbypassable
+# bound. The orphaned call is left to finish in the background thread; its
+# result is simply never awaited past the deadline.
+_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="hf-llm-call")
 
 _OFFICE_LABELS = {
     "Municipality": "la Municipalité (Baladiya)",
@@ -42,35 +51,39 @@ en listant uniquement les identifiants des règles ci-dessus que tu as réelleme
 """
 
 
+def _do_chat_completion(prompt: str, timeout_s: float) -> str:
+    client = InferenceClient(model=config.HF_MODEL_PRIMARY, token=config.HF_API_TOKEN, timeout=timeout_s)
+    response = client.chat_completion(
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=400,
+    )
+    return response.choices[0].message.content
+
+
 def call_llm(prompt: str, timeout_s: float | None = None) -> str | None:
-    """Single attempt against the primary model, one short retry only on a
-    small "model loading" wait. Never chains multiple models at runtime.
-    Returns None on any failure -- caller must fall back to the template.
+    """Single attempt against the primary model, bounded by a real wall-clock
+    timeout (see module docstring -- huggingface_hub's own timeout kwarg is
+    not trusted). Never chains multiple models at runtime. Returns None on
+    any failure or timeout -- caller must fall back to the template.
     """
     if not config.HF_API_TOKEN:
         logger.warning("No HF_API_TOKEN configured; skipping LLM call.")
         return None
 
     timeout_s = timeout_s or config.LLM_TIMEOUT_S
-    client = InferenceClient(model=config.HF_MODEL_PRIMARY, token=config.HF_API_TOKEN, timeout=timeout_s)
 
-    for attempt in range(2):
-        try:
-            response = client.chat_completion(
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=400,
-            )
-            return response.choices[0].message.content
-        except HfHubHTTPError as exc:
-            status = getattr(exc.response, "status_code", None)
-            if attempt == 0 and status == 503:
-                logger.info("HF model loading (503), one retry after short wait not implemented synchronously; falling back.")
-            logger.warning("HF Inference API call failed: %s", exc)
-            return None
-        except Exception as exc:  # noqa: BLE001 - any failure must fall back cleanly
-            logger.warning("HF Inference API call failed: %s", exc)
-            return None
-    return None
+    future = _executor.submit(_do_chat_completion, prompt, timeout_s)
+    try:
+        return future.result(timeout=timeout_s)
+    except FutureTimeoutError:
+        logger.warning("HF Inference API call exceeded %.1fs wall-clock timeout; falling back.", timeout_s)
+        return None
+    except HfHubHTTPError as exc:
+        logger.warning("HF Inference API call failed: %s", exc)
+        return None
+    except Exception as exc:  # noqa: BLE001 - any failure must fall back cleanly
+        logger.warning("HF Inference API call failed: %s", exc)
+        return None
 
 
 def pick_target_office(chunks: list[dict]) -> str:

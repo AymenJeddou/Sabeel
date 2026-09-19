@@ -6,6 +6,7 @@ import logging
 from fastapi import FastAPI
 
 from . import config
+from .embeddings import get_model
 from .pipeline import generate
 from .retrieval import collection_count
 from .schemas import GenerateRequest, GenerateResponse, HealthResponse
@@ -13,6 +14,13 @@ from .schemas import GenerateRequest, GenerateResponse, HealthResponse
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="RoadScan RAG Service")
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    # Eagerly load the embedding model so the first real request doesn't pay
+    # for HF Hub metadata round-trips on top of the LLM call's own timeout.
+    get_model()
 
 
 @app.get("/health", response_model=HealthResponse)
