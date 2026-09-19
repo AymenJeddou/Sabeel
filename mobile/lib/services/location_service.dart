@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:geolocator/geolocator.dart';
 
 class LocationFix {
@@ -31,9 +33,27 @@ class LocationService {
       throw Exception('Location services are disabled.');
     }
 
-    final position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-    );
+    // Without a time limit, getCurrentPosition waits forever when no GPS fix
+    // arrives (indoors, no signal), leaving the submit button stuck. Bound it,
+    // fall back to the last known position, and otherwise fail with a clear
+    // message the UI can show.
+    Position position;
+    try {
+      position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+    } on TimeoutException {
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown == null) {
+        throw Exception(
+          'Could not get a GPS fix. Move to open sky (or enable location) and try again.',
+        );
+      }
+      position = lastKnown;
+    }
 
     return LocationFix(
       lat: position.latitude,
