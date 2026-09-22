@@ -1,0 +1,34 @@
+doc_title: "Loi organique n°2018-29 du 9 mai 2018, relative au Code des Collectivités Locales"
+is_placeholder: false
+
+rules:
+  - rule_id: TN-CCL2018-ART69
+    road_type: urbain_principal
+    section: "Article 69"
+    lang: fr
+    severity_min: 3
+    target_office: Municipality
+    source: "Loi organique n°2018-29 du 9 mai 2018, relative au Code des Collectivités Locales, Article 69"
+    note: "Verbatim quote via legislation-securite.tn's presentation of the law; primary PDF (faolex.fao.org/docs/pdf/tun202128.pdf) not yet cross-checked directly (no local PDF-text tool available this session)."
+    text: >
+      L'article 69 du Code des Collectivités Locales inclut dans le domaine public
+      communal : "les avenues et les rues, les places publiques... les routes
+      publiques ainsi que leurs dépendances, sauf les routes classées nationales
+      et les autoroutes". Les nids de poule sur les avenues, rues et routes
+      publiques communales relèvent donc de la responsabilité de la commune
+      (baladiya), à l'exclusion des routes classées nationales et des autoroutes.
+
+  - rule_id: TN-CCL2018-ART69-SEC
+    road_type: urbain_secondaire
+    section: "Article 69"
+    lang: fr
+    severity_min: 3
+    target_office: Municipality
+    source: "Loi organique n°2018-29 du 9 mai 2018, relative au Code des Collectivités Locales, Article 69"
+    note: "Same provision as TN-CCL2018-ART69, duplicated under urbain_secondaire for retrieval filtering by road_type."
+    text: >
+      L'article 69 du Code des Collectivités Locales inclut dans le domaine public
+      communal les avenues, rues et routes publiques et leurs dépendances, à
+      l'exclusion des routes classées nationales et des autoroutes. Une route
+      urbaine secondaire (quartier, zone résidentielle) relève donc de la
+      responsabilité de la commune (baladiya).
