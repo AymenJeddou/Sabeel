@@ -1,0 +1,21 @@
+# Environments
+.env
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Uploaded photos (local dev) and the RAG vector store
+backend/app/static/photos/*
+!backend/app/static/photos/.gitkeep
+rag-service/chroma_db/
