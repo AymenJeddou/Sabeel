@@ -7,4 +7,7 @@
 /// the host machine's LAN IPv4 address instead (find it with `ipconfig` on
 /// Windows, look for the Wi-Fi adapter). If the phone isn't on the same
 /// network, use `ngrok http 8000` instead and paste the https URL here.
-const String apiBaseUrl = 'http://10.0.2.2:8000';
+///
+/// Or override without editing: `--dart-define=API_BASE_URL=http://...`.
+const String apiBaseUrl =
+    String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000');
