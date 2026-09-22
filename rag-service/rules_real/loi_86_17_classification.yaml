@@ -1,0 +1,64 @@
+doc_title: "Loi n°86-17 du 7 mars 1986, portant refonte de la législation relative au domaine public routier de l'État -- et mandat de la DGPC (mehat.gov.tn)"
+is_placeholder: false
+
+rules:
+  - rule_id: TN-LOI86-17-AUTOROUTE
+    road_type: autoroute
+    section: "Classification RN/RR/RL"
+    lang: fr
+    severity_min: 3
+    target_office: DGPC
+    source: "Loi n°86-17 du 7 mars 1986, portant refonte de la législation relative au domaine public routier de l'État"
+    note: "Law number/date/title confirmed via majles.marsad.tn's record of the 2016 amendment (Loi N°26/2016). The RN/RR/RL definitions below are paraphrased from a secondary summary, not a verbatim article quote -- verify against primary text before relying on the wording."
+    text: >
+      La loi n°86-17 du 7 mars 1986 classe les routes du domaine public routier
+      de l'État en routes nationales (RN), routes régionales (RR) et routes
+      locales (RL). Les autoroutes et routes nationales assurent les liaisons
+      entre les frontières du territoire de la République et relèvent du
+      domaine public routier de l'État, géré par la DGPC (Direction Générale
+      des Ponts et Chaussées, Ministère de l'Équipement et de l'Habitat).
+
+  - rule_id: TN-LOI86-17-RR
+    road_type: rural
+    section: "Classification RN/RR/RL"
+    lang: fr
+    severity_min: 3
+    target_office: DGPC
+    source: "Loi n°86-17 du 7 mars 1986, portant refonte de la législation relative au domaine public routier de l'État"
+    note: "Same provenance caveat as TN-LOI86-17-AUTOROUTE."
+    text: >
+      Les routes régionales (RR) assurent les communications entre deux ou
+      plusieurs régions du territoire de la République ; les routes locales
+      (RL) assurent les communications d'intérêt local ou agricole. Ces deux
+      catégories relèvent du réseau routier classé de l'État, entretenu par
+      la DGPC via ses directions régionales.
+
+  - rule_id: TN-DGPC-MANDATE
+    road_type: rural
+    section: "Attributions et organisation (mehat.gov.tn)"
+    lang: fr
+    severity_min: 4
+    target_office: DGPC
+    source: "Ministère de l'Équipement et de l'Habitat -- Attributions et organisation de la DGPC (mehat.gov.tn)"
+    note: "Verbatim quote from mehat.gov.tn's public page on DGPC's mandate, fetched live this session."
+    text: >
+      La Direction Générale des Ponts et Chaussées (DGPC) "assure la conception
+      et la mise en œuvre, directement ou à travers les directions régionales,
+      de la politique nationale en matière de création, d'entretien et
+      d'exploitation du réseau routier de l'État". Un nid de poule sévère sur
+      une route régionale ou locale classée doit donc être transmis à la
+      direction régionale de la DGPC compétente.
+
+  - rule_id: TN-DGPC-PISTE
+    road_type: piste
+    section: "Attributions et organisation (mehat.gov.tn)"
+    lang: fr
+    severity_min: 3
+    target_office: DGPC
+    source: "Ministère de l'Équipement et de l'Habitat -- Attributions et organisation de la DGPC (mehat.gov.tn)"
+    note: "Verbatim-adjacent quote from mehat.gov.tn: DGPC 'promeut les pistes rurales éligibles au classement dans le réseau routier de l'État.'"
+    text: >
+      La DGPC "promeut les pistes rurales éligibles au classement dans le
+      réseau routier de l'État". Une piste non classée qui présente un
+      danger doit être signalée à la DGPC en vue d'une évaluation, même si
+      elle n'est pas encore formellement intégrée au réseau routier classé.

@@ -18,7 +18,6 @@ from pathlib import Path
 import numpy as np
 import cv2
 import onnxruntime as ort
-from ultralytics import YOLO
 
 from severity_scoring import score_from_detections
 
