@@ -68,9 +68,26 @@ class LocationService {
       );
     }
 
-    final position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-    );
+    // Without a time limit, getCurrentPosition waits forever when no fix
+    // arrives (indoors, weak signal), leaving the confirm screen stuck.
+    Position position;
+    try {
+      position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+    } on TimeoutException {
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown == null) {
+        throw const LocationServiceException(
+          'Impossible d\'obtenir une position GPS. Déplace-toi à ciel ouvert '
+          'et réessaie.',
+        );
+      }
+      position = lastKnown;
+    }
 
     final compassHeading = await _readCompassHeading();
     final directionDeg = compassHeading ?? _normalizeHeading(position.heading);

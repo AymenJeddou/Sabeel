@@ -33,6 +33,8 @@ class Report(Base):
         SAEnum(ReportStatus, name="report_status"), nullable=False, default=ReportStatus.NEW
     )
     cluster_id: Mapped[uuid.UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+    sheet_text: Mapped[str | None] = mapped_column(String, nullable=True)
+    target_office: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(nullable=False)
     updated_at: Mapped[datetime] = mapped_column(nullable=False)
 

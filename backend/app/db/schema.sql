@@ -22,11 +22,15 @@ CREATE TABLE reports (
     confidence        double precision CHECK (confidence IS NULL OR (confidence BETWEEN 0 AND 1)),
     status            report_status NOT NULL DEFAULT 'new',
     cluster_id        uuid,
+    -- Additive beyond Section 4.1's frozen Report object -- populated by the RAG
+    -- service's generate() call once a report is confirmed with score >= 3.
+    sheet_text        text,
+    target_office     text,
     created_at        timestamptz NOT NULL DEFAULT now(),
     updated_at        timestamptz NOT NULL DEFAULT now()
 );
 
--- Sprint 2: supports the <5m duplicate-merge check (ST_DWithin) without denormalizing lat/lon.
+-- Supports the <5m duplicate-merge check (ST_DWithin) without denormalizing lat/lon.
 CREATE INDEX idx_reports_geog ON reports USING GIST (geography(ST_SetSRID(ST_MakePoint(lon, lat), 4326)));
 
 CREATE INDEX idx_reports_status ON reports (status);

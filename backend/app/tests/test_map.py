@@ -1,3 +1,7 @@
+"""Integration tests against a real database -- run `docker compose up -d db` first."""
+import io
+import uuid
+
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
@@ -5,7 +9,25 @@ from backend.app.main import app
 client = TestClient(app)
 
 
+def _submit(lat: str, lon: str) -> str:
+    files = {"photo": ("pothole.jpg", io.BytesIO(b"fake-bytes"), "image/jpeg")}
+    form = {
+        "device_report_id": f"test-map-{uuid.uuid4()}",
+        "lat": lat,
+        "lon": lon,
+        "gps_accuracy_m": "4.2",
+        "speed_kmh": "0",
+        "direction_deg": "270.0",
+        "captured_at": "2026-09-15T10:32:00Z",
+        "source": "manual",
+    }
+    response = client.post("/reports", data=form, files=files)
+    return response.json()["report_id"]
+
+
 def test_get_map_returns_contract_shape():
+    _submit("10.18", "36.80")
+
     response = client.get("/map", params={"bbox": "10.0,36.7,10.3,36.9"})
 
     assert response.status_code == 200
@@ -18,5 +40,20 @@ def test_get_map_returns_contract_shape():
 
 def test_get_map_without_bbox_still_works():
     response = client.get("/map")
+    assert response.status_code == 200
+
+
+def test_get_map_bbox_excludes_reports_outside_it():
+    inside_id = _submit("10.18", "36.80")
+    _submit("50.0", "50.0")  # far outside any Tunisia bbox
+
+    response = client.get("/map", params={"bbox": "10.0,36.7,10.3,36.9"})
 
     assert response.status_code == 200
+    ids = {item["report_id"] for item in response.json()}
+    assert inside_id in ids
+
+
+def test_get_map_invalid_bbox_returns_422():
+    response = client.get("/map", params={"bbox": "not,a,valid,bbox"})
+    assert response.status_code == 422

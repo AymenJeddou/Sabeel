@@ -22,6 +22,12 @@ class ReportCreateResponse(BaseModel):
     device_report_id: str
     status: ReportStatus
     score: int | None = None
+    # Additive beyond Section 4.5's illustrative shape -- populated only when
+    # the synchronous RAG call succeeds within this same request. Field names
+    # elsewhere are unchanged; this is extra information a fully async
+    # implementation wouldn't have yet at response time.
+    sheet_summary: str | None = None
+    target_office: str | None = None
 
 
 class MapReport(BaseModel):

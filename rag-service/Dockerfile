@@ -12,4 +12,6 @@ COPY rules_placeholder ./rules_placeholder
 
 EXPOSE 8001
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Idempotent -- rebuilds the Chroma collection from rules_real/ + rules_placeholder/
+# on every container start, so an updated rule file always takes effect.
+CMD ["sh", "-c", "python -m ingestion.build_index && uvicorn app.main:app --host 0.0.0.0 --port 8001"]

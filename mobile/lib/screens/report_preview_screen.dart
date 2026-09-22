@@ -6,8 +6,10 @@ import 'package:uuid/uuid.dart';
 
 import '../models/queued_report.dart';
 import '../models/report_draft.dart';
+import '../services/api_client.dart';
 import '../services/location_service.dart';
 import '../services/offline_queue_repository.dart';
+import 'report_result_screen.dart';
 
 /// Shown right after a photo is captured: acquires GPS/speed/compass,
 /// generates the report's `device_report_id`, logs every contract field
@@ -29,6 +31,7 @@ class ReportPreviewScreen extends StatefulWidget {
 
 class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
   final LocationService _locationService = LocationService();
+  final RoadScanApiClient _apiClient = const RoadScanApiClient();
   final Uuid _uuid = Uuid();
 
   ReportDraft? _draft;
@@ -84,11 +87,44 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
     final draft = _draft;
     if (draft == null || _isSaving) return;
     setState(() => _isSaving = true);
+
+    final String permanentPath;
     try {
-      final permanentPath = await _copyPhotoToAppStorage(
+      permanentPath = await _copyPhotoToAppStorage(
         widget.photoPath,
         draft.deviceReportId,
       );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Impossible d'enregistrer le signalement."),
+        ),
+      );
+      return;
+    }
+
+    // Try submitting straight to the Core API first. A report that uploads
+    // successfully has nothing left to retry, so it's never added to the
+    // offline queue -- only a failed/unreachable submission falls back to
+    // the queue, which is what "offline" actually means here.
+    try {
+      final result = await _apiClient.submitReport(
+        draft: draft,
+        photoPath: permanentPath,
+      );
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => ReportResultScreen(result: result)),
+      );
+      return;
+    } catch (e) {
+      debugPrint('[RoadScan] Upload failed, queuing offline: $e');
+    }
+
+    try {
       final queuedReport = QueuedReport(
         draft: draft,
         photoPath: permanentPath,
@@ -99,7 +135,11 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
       final messenger = ScaffoldMessenger.of(context);
       Navigator.of(context).popUntil((route) => route.isFirst);
       messenger.showSnackBar(
-        const SnackBar(content: Text("Signalement ajouté à la file d'envoi.")),
+        const SnackBar(
+          content: Text(
+            "Serveur injoignable — signalement ajouté à la file d'envoi.",
+          ),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
