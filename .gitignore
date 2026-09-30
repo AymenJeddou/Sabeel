@@ -18,4 +18,10 @@ Thumbs.db
 # Uploaded photos (local dev) and the RAG vector store
 backend/app/static/photos/*
 !backend/app/static/photos/.gitkeep
+!backend/app/static/photos/_seed/
 rag-service/chroma_db/
+
+# Dashboard (Vite)
+dashboard/node_modules/
+dashboard/dist/
+dashboard/*.tsbuildinfo

@@ -1,24 +1,22 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 
 import '../app/brand.dart';
-import '../services/mock_reports.dart';
-import '../services/offline_queue_repository.dart';
+import '../services/sabeel_data.dart';
 import 'camera_capture_screen.dart';
+import 'support_chat_screen.dart';
 
 /// The Accueil tab (mobile/design/main.png, restyled to the Sabeel brand).
 ///
-/// The mockup's "1284 signalements / 312 réparés" stat cards are city-wide
-/// aggregates that only the backend (WP3) can provide, so they're shown
-/// honestly rather than faked. Driving mode opens the one-tap camera.
+/// The stat cards are the city-wide figures from the Core API's GET /stats
+/// (a dash while offline). Driving mode opens the one-tap camera.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
-    required this.queueRepository,
+    required this.data,
     required this.onNavigateToTab,
   });
 
-  final OfflineQueueRepository queueRepository;
+  final SabeelData data;
   final ValueChanged<int> onNavigateToTab;
 
   Future<void> _openCamera(
@@ -28,7 +26,7 @@ class HomeScreen extends StatelessWidget {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => CameraCaptureScreen(
-          queueRepository: queueRepository,
+          queueRepository: data.queue,
           drivingMode: drivingMode,
         ),
       ),
@@ -38,64 +36,76 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: queueRepository,
+      listenable: data,
       builder: (context, _) {
-        final pendingCount = queueRepository.queue.length;
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const _Header(),
-              const SizedBox(height: 20),
-              _CameraCallToAction(onTap: () => _openCamera(context)),
-              const SizedBox(height: 14),
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        value: '$pendingCount',
-                        label: 'Rapports',
-                        icon: Icons.warning_amber_rounded,
-                        accent: const Color(0xFFA86F06),
-                        tint: sabeelAmber.withValues(alpha: 0.16),
+        String stat(String key) => '${data.stats?[key] ?? '—'}';
+        return RefreshIndicator(
+          onRefresh: data.refresh,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const _Header(),
+                const SizedBox(height: 20),
+                _CameraCallToAction(onTap: () => _openCamera(context)),
+                const SizedBox(height: 14),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          value: stat('potholes_total'),
+                          label: 'Signalés à Tunis',
+                          icon: Icons.warning_amber_rounded,
+                          accent: const Color(0xFFA86F06),
+                          tint: sabeelAmber.withValues(alpha: 0.16),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatCard(
-                        // Real figure comes from WP3's API; debug shows the
-                        // sample number so the screen reads like the design.
-                        value: kDebugMode ? '$mockRepairedCount' : '—',
-                        label: 'Réparés',
-                        icon: Icons.check_circle_outline,
-                        accent: sabeelTeal,
-                        tint: sabeelTeal.withValues(alpha: 0.12),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          value: stat('fixed'),
+                          label: 'Réparés',
+                          icon: Icons.check_circle_outline,
+                          accent: sabeelTeal,
+                          tint: sabeelTeal.withValues(alpha: 0.12),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                height: 132,
-                child: Row(
-                  children: [
-                    Expanded(child: _MapTile(onTap: () => onNavigateToTab(1))),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ReportsTile(onTap: () => onNavigateToTab(2)),
-                    ),
-                  ],
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 132,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _MapTile(onTap: () => onNavigateToTab(1)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ReportsTile(onTap: () => onNavigateToTab(2)),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              _DrivingModeCard(
-                onTap: () => _openCamera(context, drivingMode: true),
-              ),
-            ],
+                const SizedBox(height: 14),
+                _DrivingModeCard(
+                  onTap: () => _openCamera(context, drivingMode: true),
+                ),
+                const SizedBox(height: 14),
+                _AssistanceCard(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SupportChatScreen(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -544,6 +554,70 @@ class _CameraCallToAction extends StatelessWidget {
                   ],
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Opens the support chat with the municipality / DGPC agents.
+class _AssistanceCard extends StatelessWidget {
+  const _AssistanceCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: sabeelLine),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: sabeelTeal.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.support_agent,
+                  color: sabeelTeal,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Assistance',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Écrire aux services techniques',
+                      style: TextStyle(color: sabeelMuted, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward, color: sabeelMuted),
             ],
           ),
         ),

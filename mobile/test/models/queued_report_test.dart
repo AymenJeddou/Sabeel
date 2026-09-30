@@ -28,10 +28,6 @@ void main() {
     );
   });
 
-  test('reference skips the mock- prefix on development samples', () {
-    expect(_queued('mock-2847a1b2').reference, 'TN-2847');
-  });
-
   test('reference is stable for the same device id', () {
     const id = 'a1b2c3d4-0000-1111-2222-333344445555';
     expect(_queued(id).reference, _queued(id).reference);

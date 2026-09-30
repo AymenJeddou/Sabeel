@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../services/offline_queue_repository.dart';
+import '../services/sabeel_data.dart';
 import 'home_screen.dart';
 import 'map_screen.dart';
 import 'reports_screen.dart';
@@ -8,9 +8,9 @@ import 'reports_screen.dart';
 /// The 3-tab shell from the design (mobile/design/main.png,map.png,reports.png):
 /// Accueil / Carte / Mes signalements.
 class RootShell extends StatefulWidget {
-  const RootShell({super.key, required this.queueRepository});
+  const RootShell({super.key, required this.data});
 
-  final OfflineQueueRepository queueRepository;
+  final SabeelData data;
 
   @override
   State<RootShell> createState() => _RootShellState();
@@ -19,19 +19,23 @@ class RootShell extends StatefulWidget {
 class _RootShellState extends State<RootShell> {
   int _selectedIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    widget.data.refresh();
+  }
+
   void _goToTab(int index) {
+    if (index != _selectedIndex) widget.data.refresh();
     setState(() => _selectedIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
     final pages = [
-      HomeScreen(
-        queueRepository: widget.queueRepository,
-        onNavigateToTab: _goToTab,
-      ),
-      MapScreen(queueRepository: widget.queueRepository),
-      ReportsScreen(queueRepository: widget.queueRepository),
+      HomeScreen(data: widget.data, onNavigateToTab: _goToTab),
+      MapScreen(data: widget.data),
+      ReportsScreen(data: widget.data),
     ];
 
     return Scaffold(

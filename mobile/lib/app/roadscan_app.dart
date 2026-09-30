@@ -3,13 +3,13 @@ import 'package:flutter/services.dart';
 
 import '../screens/root_shell.dart';
 import '../screens/splash_screen.dart';
-import '../services/offline_queue_repository.dart';
+import '../services/sabeel_data.dart';
 import 'brand.dart';
 
 class RoadScanApp extends StatelessWidget {
-  const RoadScanApp({super.key, required this.queueRepository});
+  const RoadScanApp({super.key, required this.data});
 
-  final OfflineQueueRepository queueRepository;
+  final SabeelData data;
 
   @override
   Widget build(BuildContext context) {
@@ -101,9 +101,7 @@ class RoadScanApp extends StatelessWidget {
           }),
         ),
       ),
-      home: SplashScreen(
-        next: (_) => RootShell(queueRepository: queueRepository),
-      ),
+      home: SplashScreen(next: (_) => RootShell(data: data)),
     );
   }
 }

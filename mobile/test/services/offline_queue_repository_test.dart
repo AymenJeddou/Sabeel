@@ -60,22 +60,18 @@ void main() {
     },
   );
 
-  test('seeded mock reports are shown but never persisted', () async {
+  test('remove drops an uploaded report from disk too', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final repository = OfflineQueueRepository(prefs);
-    await repository.load();
+    await repository.add(_sampleReport('sent'));
+    await repository.add(_sampleReport('still-queued'));
 
-    repository.seedMockReports([_sampleReport('mock-demo')]);
-    expect(repository.queue, hasLength(1));
-
-    // A real capture triggers persistence; the mock must not ride along.
-    await repository.add(_sampleReport('real-1'));
+    await repository.remove(repository.queue.first);
 
     final reloaded = OfflineQueueRepository(prefs);
     await reloaded.load();
-
-    expect(reloaded.queue.map((r) => r.draft.deviceReportId), ['real-1']);
+    expect(reloaded.queue.map((r) => r.draft.deviceReportId), ['still-queued']);
   });
 
   test('queue exposes an unmodifiable list', () async {

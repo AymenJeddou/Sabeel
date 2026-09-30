@@ -46,36 +46,6 @@ class _ReportResultScreenState extends State<ReportResultScreen> {
     }
   }
 
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'new':
-        return Colors.grey;
-      case 'confirmed':
-        return sabeelAmber;
-      case 'sheet_sent':
-        return sabeelNavy;
-      case 'fixed':
-        return sabeelTeal;
-      default:
-        return Colors.black;
-    }
-  }
-
-  String _statusLabel(String status) {
-    switch (status) {
-      case 'new':
-        return 'Nouveau';
-      case 'confirmed':
-        return 'Confirmé';
-      case 'sheet_sent':
-        return 'Fiche envoyée';
-      case 'fixed':
-        return 'Réparé';
-      default:
-        return status;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final score = _result.score;
@@ -94,10 +64,12 @@ class _ReportResultScreenState extends State<ReportResultScreen> {
                   Row(
                     children: [
                       Chip(
-                        label: Text(_statusLabel(_result.status)),
-                        backgroundColor: _statusColor(
-                          _result.status,
-                        ).withValues(alpha: 0.15),
+                        label: Text(
+                          statusLabels[_result.status] ?? _result.status,
+                        ),
+                        backgroundColor:
+                            (statusColors[_result.status] ?? sabeelInk)
+                                .withValues(alpha: 0.15),
                         side: BorderSide.none,
                       ),
                       const SizedBox(width: 8),

@@ -28,3 +28,16 @@ async def generate(lat: float, lon: float, score: int, road_type: Optional[str] 
     except Exception as exc:  # noqa: BLE001 - RAG failures must never surface as a 500 here
         logger.warning("RAG service call failed: %s", exc)
         return None
+
+
+async def chat(prompt: str) -> Optional[str]:
+    """Free-form LLM answer via the RAG service's POST /chat, or None on any
+    failure -- the assistant then falls back to a data-only answer."""
+    try:
+        async with httpx.AsyncClient(timeout=settings.rag_timeout_s + 15) as client:
+            response = await client.post(f"{settings.rag_service_url}/chat", json={"prompt": prompt})
+        response.raise_for_status()
+        return response.json().get("content") or None
+    except Exception as exc:  # noqa: BLE001 - the assistant must degrade, not 500
+        logger.warning("RAG chat call failed: %s", exc)
+        return None

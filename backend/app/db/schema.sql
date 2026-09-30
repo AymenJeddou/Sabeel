@@ -4,7 +4,7 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS pgcrypto; -- gen_random_uuid()
 
-CREATE TYPE report_status AS ENUM ('new', 'confirmed', 'sheet_sent', 'fixed');
+CREATE TYPE report_status AS ENUM ('new', 'confirmed', 'sheet_sent', 'fixed', 'rejected');
 CREATE TYPE report_source AS ENUM ('manual', 'driving_mode');
 
 CREATE TABLE reports (
@@ -26,6 +26,10 @@ CREATE TABLE reports (
     -- service's generate() call once a report is confirmed with score >= 3.
     sheet_text        text,
     target_office     text,
+    -- Dashboard additions: the citizen's persistent device id (for "Mes Rapports"
+    -- and support chat) and a human-readable place name when one is known.
+    device_id         text,
+    address           text,
     created_at        timestamptz NOT NULL DEFAULT now(),
     updated_at        timestamptz NOT NULL DEFAULT now()
 );
@@ -35,3 +39,14 @@ CREATE INDEX idx_reports_geog ON reports USING GIST (geography(ST_SetSRID(ST_Mak
 
 CREATE INDEX idx_reports_status ON reports (status);
 CREATE INDEX idx_reports_cluster_id ON reports (cluster_id);
+CREATE INDEX idx_reports_device_id ON reports (device_id);
+
+-- Citizen <-> authority support chat, one thread per device.
+CREATE TABLE messages (
+    message_id  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    device_id   text NOT NULL,
+    sender      text NOT NULL CHECK (sender IN ('citizen', 'authority')),
+    body        text NOT NULL,
+    created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_messages_device_id ON messages (device_id, created_at);
