@@ -1,0 +1,212 @@
+[
+ {
+  "file": "backend/app/static/photos/_seed/p00.jpg",
+  "title": "File:Azemmour mobilité urbaine-photo Bertrand SOUBEYRAND.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c0/Azemmour_mobilit%C3%A9_urbaine-photo_Bertrand_SOUBEYRAND.jpg/1280px-Azemmour_mobilit%C3%A9_urbaine-photo_Bertrand_SOUBEYRAND.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 1,
+  "confidence": 0.7881034016609192
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p01.jpg",
+  "title": "File:Bache corregidora1.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2f/Bache_corregidora1.jpg/1280px-Bache_corregidora1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 3,
+  "confidence": 0.896287739276886
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p02.jpg",
+  "title": "File:Bache corregidora2.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/f/fa/Bache_corregidora2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p03.jpg",
+  "title": "File:Bache de calle de Milpa Alta.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/Bache_de_calle_de_Milpa_Alta.jpg/1280px-Bache_de_calle_de_Milpa_Alta.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p04.jpg",
+  "title": "File:Bache de calle.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Bache_de_calle.jpg/1280px-Bache_de_calle.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 3,
+  "confidence": 0.40934956073760986
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p05.jpg",
+  "title": "File:Bache destruido.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/6/6f/Bache_destruido.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p07.jpg",
+  "title": "File:Bache en la calle.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Bache_en_la_calle.jpg/1280px-Bache_en_la_calle.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p08.jpg",
+  "title": "File:Bache en la escuela.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/af/Bache_en_la_escuela.jpg/1280px-Bache_en_la_escuela.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p09.jpg",
+  "title": "File:Bache en pavimento1.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/d/db/Bache_en_pavimento1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p12.jpg",
+  "title": "File:Bache en una banqueta.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5f/Bache_en_una_banqueta.jpg/1280px-Bache_en_una_banqueta.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 3,
+  "confidence": 0.44487741589546204
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p13.jpg",
+  "title": "File:Bache ENP 1.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/64/Bache_ENP_1.jpg/1280px-Bache_ENP_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p14.jpg",
+  "title": "File:Bache ENP1.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Bache_ENP1.jpg/1280px-Bache_ENP1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 3,
+  "confidence": 0.8062986731529236
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p15.jpg",
+  "title": "File:Bache grande 1.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/59/Bache_grande_1.jpg/1280px-Bache_grande_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p16.jpg",
+  "title": "File:Bache mediano.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/6/62/Bache_mediano.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p17.jpg",
+  "title": "File:Bache Noviembre.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/de/Bache_Noviembre.jpg/1280px-Bache_Noviembre.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 3,
+  "confidence": 0.2558780908584595
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p18.jpg",
+  "title": "File:Bache pequeño 1.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Bache_peque%C3%B1o_1.jpg/1280px-Bache_peque%C3%B1o_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p19.jpg",
+  "title": "File:Bache pequeño CDMX.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4c/Bache_peque%C3%B1o_CDMX.jpg/1280px-Bache_peque%C3%B1o_CDMX.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 2,
+  "confidence": 0.8374942541122437
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p20.jpg",
+  "title": "File:Bache pequeño.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/1/11/Bache_peque%C3%B1o.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p21.jpg",
+  "title": "File:Bache tapado.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Bache_tapado.jpg/1280px-Bache_tapado.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 3,
+  "confidence": 0.45334482192993164
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p22.jpg",
+  "title": "File:BACHES 1.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/7/72/BACHES_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "score": 3,
+  "confidence": 0.5641055107116699
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p26.jpg",
+  "title": "File:Hsha-2.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/Hsha-2.jpg/1280px-Hsha-2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 4,
+  "confidence": 0.48339465260505676
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p27.jpg",
+  "title": "File:Indlela yeemodere izele amanzi akhukhule ihlabathi, begodi amanzi la sele enzele nomgodi omncani nofana imbobo endleleni. Imbobo le izokwenza bona iimodere zikhambe kabuhlungu.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a8/Indlela_yeemodere_izele_amanzi_akhukhule_ihlabathi%2C_begodi_amanzi_la_sele_enzele_nomgodi_omncani_nofana_imbobo_endleleni._Imbobo_le_izokwenza_bona_iimodere_zikhambe_kabuhlungu.jpg/1280px-thumbnail.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 4,
+  "confidence": 0.9265645146369934
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p28.jpg",
+  "title": "File:Lcb-1.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Lcb-1.jpg/1280px-Lcb-1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 3,
+  "confidence": 0.7904976606369019
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p29.jpg",
+  "title": "File:Lcb-2.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a1/Lcb-2.jpg/1280px-Lcb-2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 4,
+  "confidence": 0.9862555265426636
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p30.jpg",
+  "title": "File:Levantamiento de piso.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d5/Levantamiento_de_piso.jpg/1280px-Levantamiento_de_piso.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": 4,
+  "confidence": 0.591330885887146
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p34.jpg",
+  "title": "File:Montón de piedras.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Mont%C3%B3n_de_piedras.jpg/1280px-Mont%C3%B3n_de_piedras.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p35.jpg",
+  "title": "File:Otro bache.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9b/Otro_bache.jpg/1280px-Otro_bache.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p36.jpg",
+  "title": "File:Panorama Route, Part II- Bourke's Luck Potholes - Panorama3882.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/Panorama_Route%2C_Part_II-_Bourke%27s_Luck_Potholes_-_Panorama3882.jpg/1280px-Panorama_Route%2C_Part_II-_Bourke%27s_Luck_Potholes_-_Panorama3882.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p37.jpg",
+  "title": "File:Panorama Route, Part II- Bourke's Luck Potholes - Panorama3884.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e4/Panorama_Route%2C_Part_II-_Bourke%27s_Luck_Potholes_-_Panorama3884.jpg/1280px-Panorama_Route%2C_Part_II-_Bourke%27s_Luck_Potholes_-_Panorama3884.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": null,
+  "confidence": null
+ },
+ {
+  "file": "backend/app/static/photos/_seed/p38.jpg",
+  "title": "File:Panorama Route, Part II- Bourke's Luck Potholes - Panorama3885.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/Panorama_Route%2C_Part_II-_Bourke%27s_Luck_Potholes_-_Panorama3885.jpg/1280px-Panorama_Route%2C_Part_II-_Bourke%27s_Luck_Potholes_-_Panorama3885.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "score": null,
+  "confidence": null
+ }
+]

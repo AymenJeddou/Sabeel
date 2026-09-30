@@ -20,10 +20,12 @@ Definition of done:
 - Any backend/API calls — nothing is uploaded; values are only logged via `debugPrint`
 - Full offline-queue sync/retry logic — only the data shape + local persistence exist
 
-The Carte tab uses `flutter_map` with OpenStreetMap tiles (no API key, but it does
-need network + the `INTERNET` permission). Markers are drawn in the "non évalué"
-blue because `score` only exists once WP1's model runs via WP3's API; the severity
-legend documents the colours those scores will map to.
+Since the dashboard work, the app talks to the Core API (`lib/services/api_client.dart`):
+reports are uploaded with an anonymous persistent `device_id` (`services/device.dart`),
+`SabeelData` (`services/sabeel_data.dart`) feeds the map (every pothole, coloured by
+severity), "Mes Rapports" (this phone's reports + live status) and the home stats, and
+retries the offline queue. `screens/support_chat_screen.dart` is the citizen side of the
+dashboard's Messages inbox. Widget tests inject `test/helpers/offline_api.dart`.
 
 ## The frozen data contract (docs/Sprint1_Action_Plan.md §4.1)
 

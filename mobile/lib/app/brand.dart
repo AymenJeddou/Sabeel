@@ -11,6 +11,33 @@ const sabeelTeal = Color(0xFF0F6E6A);
 const sabeelMuted = Color(0xFF6B6A66);
 const sabeelLine = Color(0xFFE9E2D4);
 
+/// Report status wording and colour, shared with the authorities dashboard.
+const statusLabels = {
+  'new': 'Reçu',
+  'confirmed': 'Confirmé',
+  'sheet_sent': 'Transmis',
+  'fixed': 'Réparé',
+  'rejected': 'Classé',
+};
+const statusColors = {
+  'new': Color(0xFF2F6DB5),
+  'confirmed': Color(0xFFB7791F),
+  'sheet_sent': Color(0xFFD0621B),
+  'fixed': sabeelTeal,
+  'rejected': sabeelMuted,
+};
+
+/// Severity 1-5 -> marker colour (same scale as the dashboard); grey = not scored.
+Color severityColor(int? score) => score == null
+    ? const Color(0xFF8A8F98)
+    : const [
+        Color(0xFF3E9E6B),
+        Color(0xFF3E9E6B),
+        Color(0xFFE0A21A),
+        Color(0xFFE36A1B),
+        Color(0xFFC8322B),
+      ][score.clamp(1, 5) - 1];
+
 /// Latin + Arabic body face and the kufi display face (bundled in assets/fonts).
 const bodyFont = 'ReadexPro';
 const displayFont = 'ReemKufi';

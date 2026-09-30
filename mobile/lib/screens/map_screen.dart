@@ -3,18 +3,17 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../app/brand.dart';
-import '../services/offline_queue_repository.dart';
+import '../config.dart';
+import '../models/remote_report.dart';
+import '../services/sabeel_data.dart';
 
-/// The Carte tab (mobile/design/map.png): OpenStreetMap tiles with a pin per
-/// report held on this device.
-///
-/// Markers are all drawn in the "non évalué" colour because severity comes
-/// from WP1's model via WP3's API, which this sprint doesn't call yet — the
-/// severity legend documents the scheme those colours will use.
+/// The Carte tab (mobile/design/map.png): every known pothole in the city
+/// from the Core API, coloured by severity, plus this phone's reports still
+/// waiting to upload (navy). Tap a pin for its photo and status.
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key, required this.queueRepository});
+  const MapScreen({super.key, required this.data});
 
-  final OfflineQueueRepository queueRepository;
+  final SabeelData data;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -26,6 +25,7 @@ class _MapScreenState extends State<MapScreen> {
   static const _maxZoom = 18.0;
 
   final MapController _mapController = MapController();
+  bool _showFixed = false;
 
   @override
   void dispose() {
@@ -44,12 +44,16 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: widget.queueRepository,
+      listenable: widget.data,
       builder: (context, _) {
-        final reports = widget.queueRepository.queue;
-        final initialCenter = reports.isEmpty
-            ? _tunisCenter
-            : LatLng(reports.first.draft.lat, reports.first.draft.lon);
+        final reports = widget.data.queue.queue;
+        final potholes =
+            widget.data.potholes
+                .where((p) => p.isOpen || (_showFixed && p.status == 'fixed'))
+                .toList()
+              // Most severe drawn last, i.e. on top.
+              ..sort((a, b) => (a.score ?? 0).compareTo(b.score ?? 0));
+        const initialCenter = _tunisCenter;
 
         return Stack(
           children: [
@@ -68,18 +72,47 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 MarkerLayer(
                   markers: [
+                    for (final p in potholes)
+                      Marker(
+                        point: LatLng(p.lat, p.lon),
+                        width: 18.0 + p.clusterSize.clamp(1, 5) * 3,
+                        height: 18.0 + p.clusterSize.clamp(1, 5) * 3,
+                        child: GestureDetector(
+                          onTap: () => showPotholeSheet(context, p),
+                          child: _ReportMarker(
+                            color: p.status == 'fixed'
+                                ? sabeelTeal
+                                : severityColor(p.score),
+                          ),
+                        ),
+                      ),
                     for (final report in reports)
                       Marker(
                         point: LatLng(report.draft.lat, report.draft.lon),
                         width: 22,
                         height: 22,
-                        child: const _ReportMarker(),
+                        child: const _ReportMarker(color: sabeelNavy),
                       ),
                   ],
                 ),
               ],
             ),
             const Positioned(top: 12, left: 12, child: _LegendCard()),
+            Positioned(
+              bottom: 16,
+              left: 12,
+              child: FilterChip(
+                label: Text(
+                  '${potholes.length} nids-de-poule · afficher réparés',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                selected: _showFixed,
+                onSelected: (v) => setState(() => _showFixed = v),
+                backgroundColor: Colors.white,
+                selectedColor: sabeelTeal.withValues(alpha: 0.15),
+                side: const BorderSide(color: sabeelLine),
+              ),
+            ),
             Positioned(
               top: 12,
               right: 12,
@@ -100,13 +133,15 @@ class _MapScreenState extends State<MapScreen> {
 }
 
 class _ReportMarker extends StatelessWidget {
-  const _ReportMarker();
+  const _ReportMarker({required this.color});
+
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: sabeelNavy,
+        color: color,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 3),
         boxShadow: const [
@@ -166,13 +201,17 @@ class _LegendCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 6),
-          _LegendRow(color: Color(0xFF2E9E4B), label: 'Mineur'),
+          _LegendRow(color: Color(0xFFC8322B), label: 'Urgent (5)'),
           SizedBox(height: 4),
-          _LegendRow(color: Color(0xFFE8862E), label: 'Modéré'),
+          _LegendRow(color: Color(0xFFE36A1B), label: 'Grave (4)'),
           SizedBox(height: 4),
-          _LegendRow(color: Color(0xFFD93B3B), label: 'Urgent'),
+          _LegendRow(color: Color(0xFFE0A21A), label: 'Modéré (3)'),
           SizedBox(height: 4),
-          _LegendRow(color: sabeelNavy, label: 'Non évalué'),
+          _LegendRow(color: Color(0xFF3E9E6B), label: 'Mineur (1-2)'),
+          SizedBox(height: 4),
+          _LegendRow(color: Color(0xFF8A8F98), label: 'À évaluer'),
+          SizedBox(height: 4),
+          _LegendRow(color: sabeelNavy, label: "En attente d'envoi"),
         ],
       ),
     );
@@ -224,6 +263,120 @@ class _MapButton extends StatelessWidget {
           child: Icon(icon, size: 20),
         ),
       ),
+    );
+  }
+}
+
+/// Photo, place and progress of one pothole (map pins and "Mes Rapports").
+void showPotholeSheet(BuildContext context, RemoteReport p) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    backgroundColor: Colors.white,
+    builder: (context) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (p.photoUrl != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  '$apiBaseUrl${p.photoUrl}',
+                  height: 170,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                ),
+              ),
+            const SizedBox(height: 14),
+            Text(
+              p.address ??
+                  '${p.lat.toStringAsFixed(5)}, ${p.lon.toStringAsFixed(5)}',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              [
+                p.ref,
+                p.score == null
+                    ? 'Sévérité à évaluer'
+                    : 'Sévérité ${p.score}/5',
+                '${p.clusterSize} signalement${p.clusterSize > 1 ? 's' : ''}',
+              ].join(' · '),
+              style: const TextStyle(color: sabeelMuted),
+            ),
+            const SizedBox(height: 16),
+            StatusTracker(status: p.status),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// Reçu -> Confirmé -> Transmis -> Réparé (mobile/design/reports.png).
+class StatusTracker extends StatelessWidget {
+  const StatusTracker({super.key, required this.status});
+
+  final String status;
+
+  static const _steps = ['new', 'confirmed', 'sheet_sent', 'fixed'];
+
+  @override
+  Widget build(BuildContext context) {
+    if (status == 'rejected') {
+      return const Text(
+        "Classé : ce n'était pas un nid-de-poule.",
+        style: TextStyle(color: sabeelMuted, fontStyle: FontStyle.italic),
+      );
+    }
+    final reached = _steps.indexOf(status);
+    final color = statusColors[status] ?? sabeelNavy;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < _steps.length; i++) ...[
+          if (i > 0)
+            Expanded(
+              child: Container(
+                height: 3,
+                margin: const EdgeInsets.only(top: 10),
+                color: i <= reached ? color : sabeelLine,
+              ),
+            ),
+          Column(
+            children: [
+              Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i <= reached ? color : Colors.white,
+                  border: Border.all(
+                    color: i <= reached ? color : sabeelLine,
+                    width: 2,
+                  ),
+                ),
+                child: i <= reached
+                    ? const Icon(Icons.check, size: 13, color: Colors.white)
+                    : null,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                statusLabels[_steps[i]]!,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: i == reached ? FontWeight.w700 : FontWeight.w500,
+                  color: i <= reached ? sabeelInk : sabeelMuted,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }

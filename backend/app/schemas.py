@@ -5,6 +5,7 @@ field-for-field. Do not rename fields (lat/lon, never lng — see Section 5 of t
 
 from datetime import datetime
 from enum import Enum
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -58,3 +59,65 @@ class StatusUpdateResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str = Field(..., examples=["Transition is not forward"])
+
+
+class ReportSummary(BaseModel):
+    """A report as the authorities dashboard sees it (derived fields: insights.py)."""
+
+    report_id: UUID
+    ref: str
+    device_report_id: str
+    device_id: str | None
+    lat: float
+    lon: float
+    address: str | None
+    score: int | None
+    confidence: float | None
+    status: ReportStatus
+    source: ReportSource
+    cluster_id: UUID | None
+    cluster_size: int
+    target_office: str | None
+    sheet_text: str | None
+    photo_url: str | None
+    created_at: datetime
+    updated_at: datetime
+    due_at: datetime | None
+    overdue: bool
+    priority: int
+
+
+class MessageIn(BaseModel):
+    device_id: str = Field(min_length=1)
+    sender: Literal["citizen", "authority"]
+    body: str = Field(min_length=1, max_length=2000)
+
+
+class MessageOut(MessageIn):
+    message_id: UUID
+    created_at: datetime
+
+
+class Conversation(BaseModel):
+    device_id: str
+    last_body: str
+    last_sender: str
+    last_at: datetime
+    count: int
+    reports: int
+
+
+class AssistantTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class AssistantRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=1000)
+    history: list[AssistantTurn] = []
+
+
+class AssistantReply(BaseModel):
+    answer: str
+    refs: list[ReportSummary]
+    source: Literal["llm", "fallback"]

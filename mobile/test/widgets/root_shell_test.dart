@@ -4,33 +4,32 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:roadscan_mobile/screens/root_shell.dart';
 import 'package:roadscan_mobile/services/offline_queue_repository.dart';
+import 'package:roadscan_mobile/services/sabeel_data.dart';
 
-Future<OfflineQueueRepository> _buildRepository() async {
+import '../helpers/offline_api.dart';
+
+Future<SabeelData> _buildData() async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final repository = OfflineQueueRepository(prefs);
   await repository.load();
-  return repository;
+  return SabeelData(repository, api: const OfflineApi());
 }
 
 void main() {
   testWidgets('shows exactly 3 bottom navigation destinations', (tester) async {
-    final repository = await _buildRepository();
+    final data = await _buildData();
 
-    await tester.pumpWidget(
-      MaterialApp(home: RootShell(queueRepository: repository)),
-    );
+    await tester.pumpWidget(MaterialApp(home: RootShell(data: data)));
     await tester.pumpAndSettle();
 
     expect(find.byType(NavigationDestination), findsNWidgets(3));
   });
 
   testWidgets('tapping a destination updates the selected tab', (tester) async {
-    final repository = await _buildRepository();
+    final data = await _buildData();
 
-    await tester.pumpWidget(
-      MaterialApp(home: RootShell(queueRepository: repository)),
-    );
+    await tester.pumpWidget(MaterialApp(home: RootShell(data: data)));
     await tester.pumpAndSettle();
 
     NavigationBar navBar() =>

@@ -17,11 +17,13 @@ from backend.app.config import settings
 from backend.app.db import get_db
 from backend.app.db_models import Report
 from backend.app.dedup import find_or_join_cluster
+from backend.app.insights import reverse_geocode, summarize_all
 from backend.app.rag_client import generate as rag_generate
 from backend.app.schemas import (
     ReportCreateResponse,
     ReportDetail,
     ReportSource,
+    ReportSummary,
     StatusUpdateRequest,
     StatusUpdateResponse,
 )
@@ -46,6 +48,8 @@ async def create_report(
     direction_deg: float = Form(...),
     captured_at: datetime = Form(...),
     source: ReportSource = Form(...),
+    # Optional, additive: the phone's persistent id, for "Mes Rapports" and support chat.
+    device_id: str | None = Form(None),
     db: AsyncSession = Depends(get_db),
 ) -> ReportCreateResponse:
     report_id = uuid.uuid4()
@@ -99,6 +103,8 @@ async def create_report(
         cluster_id=cluster_id,
         sheet_text=sheet_text,
         target_office=target_office,
+        device_id=device_id,
+        address=await reverse_geocode(lat, lon),
     )
     db.add(report)
     await db.commit()
@@ -111,6 +117,22 @@ async def create_report(
         sheet_summary=sheet_text,
         target_office=target_office,
     )
+
+
+@router.get("/reports", response_model=list[ReportSummary])
+async def list_reports(
+    device_id: str | None = None,
+    status: ReportStatus | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    """Every report with dashboard fields (ref, cluster size, deadline, priority),
+    newest first. Cluster sizes count across all reports, not just the filtered ones."""
+    rows = list((await db.execute(select(Report).order_by(Report.created_at.desc()))).scalars())
+    return [
+        s
+        for row, s in zip(rows, summarize_all(rows))
+        if (device_id is None or row.device_id == device_id) and (status is None or s["status"] == status)
+    ]
 
 
 @router.get("/reports/{device_report_id}", response_model=ReportDetail)

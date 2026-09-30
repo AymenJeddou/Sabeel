@@ -4,6 +4,8 @@ FORWARD_PAIRS = [
     (ReportStatus.NEW, ReportStatus.CONFIRMED),
     (ReportStatus.CONFIRMED, ReportStatus.SHEET_SENT),
     (ReportStatus.SHEET_SENT, ReportStatus.FIXED),
+    (ReportStatus.NEW, ReportStatus.REJECTED),
+    (ReportStatus.SHEET_SENT, ReportStatus.REJECTED),
 ]
 
 INVALID_PAIRS = [
@@ -13,6 +15,8 @@ INVALID_PAIRS = [
     (ReportStatus.NEW, ReportStatus.SHEET_SENT),  # skips confirmed
     (ReportStatus.NEW, ReportStatus.FIXED),  # skips two states
     (ReportStatus.FIXED, ReportStatus.NEW),  # backward to start
+    (ReportStatus.FIXED, ReportStatus.REJECTED),  # can't reject a closed report
+    (ReportStatus.REJECTED, ReportStatus.CONFIRMED),  # rejection is final
 ]
 
 
@@ -26,5 +30,5 @@ def test_invalid_transitions_rejected():
         assert is_valid_transition(current, new) is False
 
 
-def test_all_four_states_covered():
-    assert {s.value for s in ReportStatus} == {"new", "confirmed", "sheet_sent", "fixed"}
+def test_all_states_covered():
+    assert {s.value for s in ReportStatus} == {"new", "confirmed", "sheet_sent", "fixed", "rejected"}

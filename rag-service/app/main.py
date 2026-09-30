@@ -3,10 +3,12 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 from . import config
 from .embeddings import get_model
+from .generation import call_llm
 from .pipeline import generate
 from .retrieval import collection_count
 from .schemas import GenerateRequest, GenerateResponse, HealthResponse
@@ -32,6 +34,20 @@ def health() -> HealthResponse:
 def generate_endpoint(req: GenerateRequest) -> GenerateResponse:
     result = generate(lat=req.lat, lon=req.lon, score=req.score, road_type=req.road_type)
     return GenerateResponse(**result)
+
+
+class ChatRequest(BaseModel):
+    prompt: str
+
+
+@app.post("/chat")
+def chat_endpoint(req: ChatRequest) -> dict:
+    """Free-form LLM call for the dashboard assistant (the Core API builds the
+    prompt from its database). Same bounded call as /generate, longer budget."""
+    content = call_llm(req.prompt, timeout_s=25)
+    if content is None:
+        raise HTTPException(status_code=503, detail="LLM unavailable")
+    return {"content": content}
 
 
 if __name__ == "__main__":

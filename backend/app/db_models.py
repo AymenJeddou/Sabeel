@@ -1,6 +1,4 @@
-"""SQLAlchemy models mirroring backend/app/db/schema.sql. Not yet wired into the
-Sprint 1 stub endpoints (see README) — ready for Sprint 2 when endpoints read/write real data.
-"""
+"""SQLAlchemy models mirroring backend/app/db/schema.sql."""
 
 import uuid
 from datetime import datetime
@@ -49,6 +47,8 @@ class Report(Base):
     cluster_id: Mapped[uuid.UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
     sheet_text: Mapped[str | None] = mapped_column(String, nullable=True)
     target_office: Mapped[str | None] = mapped_column(String, nullable=True)
+    device_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    address: Mapped[str | None] = mapped_column(String, nullable=True)
     # server_default (not just the DB's own DEFAULT now()) tells SQLAlchemy to
     # omit these columns from the INSERT entirely when unset, instead of
     # explicitly sending NULL and hitting the NOT NULL constraint.
@@ -59,3 +59,13 @@ class Report(Base):
         CheckConstraint("score IS NULL OR (score BETWEEN 1 AND 5)", name="score_range"),
         CheckConstraint("confidence IS NULL OR (confidence BETWEEN 0 AND 1)", name="confidence_range"),
     )
+
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    message_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    device_id: Mapped[str] = mapped_column(String, nullable=False)
+    sender: Mapped[str] = mapped_column(String, nullable=False)
+    body: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())

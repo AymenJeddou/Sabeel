@@ -30,12 +30,7 @@ class QueuedReport {
   /// account. Derived from [ReportDraft.deviceReportId] so it is stable for
   /// the life of the report and needs no extra storage.
   String get reference {
-    // Development samples carry a `mock-` prefix (see mock_reports.dart);
-    // skipping it keeps their references readable.
-    final raw = draft.deviceReportId.startsWith('mock-')
-        ? draft.deviceReportId.substring(5)
-        : draft.deviceReportId;
-    final compact = raw.replaceAll(RegExp('[^0-9a-zA-Z]'), '');
+    final compact = draft.deviceReportId.replaceAll(RegExp('[^0-9a-zA-Z]'), '');
     final suffix = compact.length >= 4 ? compact.substring(0, 4) : compact;
     return 'TN-${suffix.toUpperCase()}';
   }
