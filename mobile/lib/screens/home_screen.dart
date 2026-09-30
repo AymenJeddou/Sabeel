@@ -1,19 +1,12 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 
+import '../app/brand.dart';
 import '../services/mock_reports.dart';
 import '../services/offline_queue_repository.dart';
 import 'camera_capture_screen.dart';
 
-const _cardShadow = [
-  BoxShadow(color: Color(0x1A000000), blurRadius: 14, offset: Offset(0, 5)),
-];
-
-const _pillShadow = [
-  BoxShadow(color: Color(0x26000000), blurRadius: 8, offset: Offset(0, 2)),
-];
-
-/// The Accueil tab (mobile/design/main.png).
+/// The Accueil tab (mobile/design/main.png, restyled to the Sabeel brand).
 ///
 /// The mockup's "1284 signalements / 312 réparés" stat cards are city-wide
 /// aggregates that only the backend (WP3) can provide, and driving mode is
@@ -50,25 +43,14 @@ class HomeScreen extends StatelessWidget {
       builder: (context, _) {
         final pendingCount = queueRepository.queue.length;
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const _Header(),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 150,
-                child: Row(
-                  children: [
-                    Expanded(child: _MapTile(onTap: () => onNavigateToTab(1))),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ReportsTile(onTap: () => onNavigateToTab(2)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
+              _CameraCallToAction(onTap: () => _openCamera(context)),
+              const SizedBox(height: 14),
               IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -78,8 +60,8 @@ class HomeScreen extends StatelessWidget {
                         value: '$pendingCount',
                         label: 'Rapports',
                         icon: Icons.warning_amber_rounded,
-                        accent: const Color(0xFFC2510C),
-                        background: const Color(0xFFFDF3D7),
+                        accent: const Color(0xFFA86F06),
+                        tint: sabeelAmber.withValues(alpha: 0.16),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -90,17 +72,28 @@ class HomeScreen extends StatelessWidget {
                         value: kDebugMode ? '$mockRepairedCount' : '—',
                         label: 'Réparés',
                         icon: Icons.check_circle_outline,
-                        accent: const Color(0xFF1B8A4B),
-                        background: const Color(0xFFE8F7EE),
+                        accent: sabeelTeal,
+                        tint: sabeelTeal.withValues(alpha: 0.12),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
+              SizedBox(
+                height: 132,
+                child: Row(
+                  children: [
+                    Expanded(child: _MapTile(onTap: () => onNavigateToTab(1))),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _ReportsTile(onTap: () => onNavigateToTab(2)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
               _DrivingModeCard(onTap: () => _openDrivingModeStub(context)),
-              const SizedBox(height: 16),
-              _CameraCallToAction(onTap: () => _openCamera(context)),
             ],
           ),
         );
@@ -114,38 +107,77 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return const Row(
       children: [
-        Row(
+        SabeelMark(height: 44),
+        SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.star, color: Colors.white, size: 22),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'RoadScan',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            SabeelWordmark(fontSize: 28),
+            SizedBox(height: 4),
+            Text(
+              'سبيل · Tunis',
+              style: TextStyle(fontSize: 13, color: sabeelMuted),
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        const Text(
-          'Tunis · تونس',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey,
-          ),
-        ),
       ],
+    );
+  }
+}
+
+/// A tile with the shared rounded shape and ripple.
+class _Tile extends StatelessWidget {
+  const _Tile({required this.color, required this.onTap, required this.child});
+
+  final Color color;
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(onTap: onTap, child: child),
+    );
+  }
+}
+
+/// Label chip on the Carte / Rapports tiles.
+class _TileLabel extends StatelessWidget {
+  const _TileLabel({
+    required this.text,
+    required this.icon,
+    required this.color,
+  });
+
+  final String text;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            text,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          ),
+          const SizedBox(width: 6),
+          Icon(icon, size: 20, color: color),
+        ],
+      ),
     );
   }
 }
@@ -157,58 +189,22 @@ class _MapTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: _cardShadow,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Material(
-          color: const Color(0xFFB9CEDD),
-          child: InkWell(
-            onTap: onTap,
-            child: Stack(
-              children: [
-                const Positioned.fill(
-                  child: CustomPaint(painter: _StreetGridPainter()),
-                ),
-                Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 16, right: 20),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topRight: Radius.circular(12),
-                        bottomRight: Radius.circular(12),
-                      ),
-                      boxShadow: _pillShadow,
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Carte',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Icon(Icons.map, size: 22, color: Color(0xFF1D6FE8)),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+    return _Tile(
+      color: const Color(0xFFE7E0D1),
+      onTap: onTap,
+      child: const Stack(
+        children: [
+          Positioned.fill(child: CustomPaint(painter: _StreetGridPainter())),
+          Positioned(top: 22, right: 30, child: SabeelMark(height: 34)),
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: _TileLabel(
+              text: 'Carte',
+              icon: Icons.map_outlined,
+              color: sabeelNavy,
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -221,73 +217,21 @@ class _ReportsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: _cardShadow,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Material(
-          color: const Color(0xFF25B866),
-          child: Ink(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF2ECC80), Color(0xFF17A055)],
-              ),
-            ),
-            child: InkWell(
-              onTap: onTap,
-              child: Stack(
-                children: [
-                  const Positioned(
-                    top: 18,
-                    right: 12,
-                    child: _ChecklistGraphic(),
-                  ),
-                  Align(
-                    alignment: Alignment.bottomRight,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 16, left: 16),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          bottomLeft: Radius.circular(12),
-                        ),
-                        boxShadow: _pillShadow,
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Rapports',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
-                            ),
-                          ),
-                          SizedBox(width: 6),
-                          Icon(
-                            Icons.chevron_right,
-                            size: 24,
-                            color: Color(0xFF17A055),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+    return _Tile(
+      color: sabeelTeal,
+      onTap: onTap,
+      child: const Stack(
+        children: [
+          Positioned(top: 18, right: 14, child: _ChecklistGraphic()),
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: _TileLabel(
+              text: 'Rapports',
+              icon: Icons.chevron_right,
+              color: sabeelTeal,
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -303,9 +247,9 @@ class _ChecklistGraphic extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _ChecklistRow(showCheck: true),
-        SizedBox(height: 10),
+        SizedBox(height: 9),
         _ChecklistRow(showCheck: true),
-        SizedBox(height: 10),
+        SizedBox(height: 9),
         _ChecklistRow(showCheck: false),
       ],
     );
@@ -319,23 +263,23 @@ class _ChecklistRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const faint = Color(0x59FFFFFF);
+    const faint = Color(0x4DFFFFFF);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 24,
+          width: 22,
           child: showCheck
-              ? const Icon(Icons.check, size: 20, color: faint)
+              ? const Icon(Icons.check, size: 18, color: sabeelAmber)
               : null,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Container(
-          width: 64,
-          height: 9,
+          width: 56,
+          height: 8,
           decoration: BoxDecoration(
             color: faint,
-            borderRadius: BorderRadius.circular(5),
+            borderRadius: BorderRadius.circular(4),
           ),
         ),
       ],
@@ -343,10 +287,9 @@ class _ChecklistRow extends StatelessWidget {
   }
 }
 
-/// The stylised street map behind the "Carte" tile — decorative only,
-/// standing in for the real map that lands in a later sprint. Wide avenues,
-/// thinner side streets, a diagonal boulevard and a park block, so it reads
-/// as a city rather than a plain grid.
+/// The stylised street map behind the "Carte" tile — decorative only.
+/// Wide avenues, thinner side streets, a curving boulevard and a park block,
+/// so it reads as a city rather than a plain grid.
 class _StreetGridPainter extends CustomPainter {
   const _StreetGridPainter();
 
@@ -357,10 +300,10 @@ class _StreetGridPainter extends CustomPainter {
 
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(w * 0.63, h * 0.08, w * 0.27, h * 0.22),
-        const Radius.circular(6),
+        Rect.fromLTWH(w * 0.06, h * 0.08, w * 0.24, h * 0.24),
+        const Radius.circular(8),
       ),
-      Paint()..color = const Color(0x808FC79A),
+      Paint()..color = const Color(0xFFCFDDC9),
     );
 
     final avenue = Paint()
@@ -368,20 +311,21 @@ class _StreetGridPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
-
     final street = Paint()
-      ..color = const Color(0xCCFFFFFF)
+      ..color = const Color(0xB3FFFFFF)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.5
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawLine(Offset(w * 0.36, -4), Offset(w * 0.36, h + 4), avenue);
-    canvas.drawLine(Offset(-4, h * 0.46), Offset(w + 4, h * 0.46), avenue);
-
-    canvas.drawLine(Offset(w * 0.74, -4), Offset(w * 0.74, h + 4), street);
-    canvas.drawLine(Offset(-4, h * 0.18), Offset(w + 4, h * 0.18), street);
-    canvas.drawLine(Offset(-4, h * 0.76), Offset(w + 4, h * 0.76), street);
-    canvas.drawLine(Offset(w * 0.02, h + 4), Offset(w + 4, h * 0.26), street);
+    canvas.drawLine(Offset(w * 0.40, -4), Offset(w * 0.40, h + 4), street);
+    canvas.drawLine(Offset(-4, h * 0.42), Offset(w + 4, h * 0.42), street);
+    canvas.drawLine(Offset(-4, h * 0.78), Offset(w + 4, h * 0.78), street);
+    canvas.drawPath(
+      Path()
+        ..moveTo(-4, h * 0.95)
+        ..cubicTo(w * 0.35, h * 0.9, w * 0.55, h * 0.2, w + 4, h * 0.12),
+      avenue,
+    );
   }
 
   @override
@@ -394,37 +338,37 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.accent,
-    required this.background,
+    required this.tint,
   });
 
   final String value;
   final String label;
   final IconData icon;
   final Color accent;
-  final Color background;
+  final Color tint;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: _cardShadow,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: sabeelLine),
       ),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 42,
+            height: 42,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
+            decoration: BoxDecoration(
+              color: tint,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, size: 26, color: accent),
+            child: Icon(icon, size: 24, color: accent),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,19 +376,15 @@ class _StatCard extends StatelessWidget {
               children: [
                 Text(
                   value,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: accent,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
                   ),
                 ),
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: accent,
-                  ),
+                  style: const TextStyle(fontSize: 12, color: sabeelMuted),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -464,20 +404,31 @@ class _DrivingModeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFF2B3040),
-      borderRadius: BorderRadius.circular(16),
-      elevation: 4,
-      shadowColor: const Color(0x552B3040),
+      color: sabeelInk,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
-        child: const Padding(
-          padding: EdgeInsets.all(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              _CircleIcon(icon: Icons.drive_eta_outlined),
-              SizedBox(width: 14),
-              Expanded(
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: sabeelAmber,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.drive_eta_outlined,
+                  color: sabeelInk,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -485,47 +436,23 @@ class _DrivingModeCard extends StatelessWidget {
                       'Mode conduite',
                       style: TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
                       ),
                     ),
                     SizedBox(height: 2),
                     Text(
                       'Mains libres — un seul appui',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward, color: Colors.white),
+              const Icon(Icons.arrow_forward, color: Colors.white70),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-class _CircleIcon extends StatelessWidget {
-  const _CircleIcon({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: Color(0x33FFFFFF),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, color: Colors.white, size: 22),
     );
   }
 }
@@ -539,138 +466,87 @@ class _CameraCallToAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x401D6FE8),
-            blurRadius: 18,
-            offset: Offset(0, 8),
+            color: sabeelNavy.withValues(alpha: 0.28),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Material(
-          color: const Color(0xFF1D6FE8),
-          child: InkWell(
-            onTap: onTap,
-            child: Stack(
-              children: [
-                const Positioned.fill(
-                  child: CustomPaint(painter: _DiagonalStripesPainter()),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 20,
-                    horizontal: 16,
+      child: Material(
+        color: sabeelNavy,
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Stack(
+            children: [
+              // The logo's pin and road, oversized and ghosted, as texture.
+              const Positioned(
+                right: -26,
+                bottom: -40,
+                child: Opacity(
+                  opacity: 0.35,
+                  child: CustomPaint(
+                    size: Size(150, 195),
+                    painter: SabeelMarkPainter(color: Color(0xFF0E3566)),
                   ),
-                  // Stack gives non-positioned children loose constraints and
-                  // aligns them top-start, so the column has to be forced to
-                  // full width for its centered children to actually centre.
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 58,
-                          height: 58,
-                          alignment: Alignment.center,
-                          decoration: const BoxDecoration(
-                            color: Color(0x33FFFFFF),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Signaler un nid-de-poule',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 21,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Une photo suffit — GPS automatique',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 22,
-                            vertical: 11,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(26),
-                            boxShadow: _pillShadow,
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Ouvrir la caméra',
-                                style: TextStyle(
-                                  color: Color(0xFF1D6FE8),
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Icon(
-                                Icons.arrow_forward,
-                                color: Color(0xFF1D6FE8),
-                                size: 18,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Signaler un nid-de-poule',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Une photo suffit — GPS automatique',
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                    const SizedBox(height: 18),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.photo_camera, color: sabeelNavy, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Ouvrir la caméra',
+                            style: TextStyle(
+                              color: sabeelNavy,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
-}
-
-/// Faint diagonal stripes across the camera call-to-action, matching the
-/// texture in mobile/design/main.png.
-class _DiagonalStripesPainter extends CustomPainter {
-  const _DiagonalStripesPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0x14FFFFFF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14;
-
-    for (var x = -size.height; x < size.width; x += 34) {
-      canvas.drawLine(
-        Offset(x, size.height),
-        Offset(x + size.height, 0),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

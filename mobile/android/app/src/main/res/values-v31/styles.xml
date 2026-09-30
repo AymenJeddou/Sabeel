@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Cream window from process start to the first Flutter frame, so the
+         logo animation starts on the same background with no flash. The app
+         is light-only, so dark mode (values-night) uses the same themes. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <!-- Android 12+ system splash: cream, no icon, then the Flutter splash takes over. -->
+        <item name="android:windowSplashScreenBackground">@color/sabeel_cream</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@color/sabeel_cream</item>
+    </style>
+</resources>

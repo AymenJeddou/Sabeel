@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/brand.dart';
 import '../models/report_result.dart';
 import '../services/api_client.dart';
 
@@ -50,11 +51,11 @@ class _ReportResultScreenState extends State<ReportResultScreen> {
       case 'new':
         return Colors.grey;
       case 'confirmed':
-        return Colors.orange;
+        return sabeelAmber;
       case 'sheet_sent':
-        return Colors.blue;
+        return sabeelNavy;
       case 'fixed':
-        return Colors.green;
+        return sabeelTeal;
       default:
         return Colors.black;
     }
@@ -94,11 +95,16 @@ class _ReportResultScreenState extends State<ReportResultScreen> {
                     children: [
                       Chip(
                         label: Text(_statusLabel(_result.status)),
-                        backgroundColor: _statusColor(_result.status).withValues(alpha: 0.2),
+                        backgroundColor: _statusColor(
+                          _result.status,
+                        ).withValues(alpha: 0.15),
+                        side: BorderSide.none,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        score != null ? 'Sévérité : $score / 5' : 'Aucun nid de poule détecté',
+                        score != null
+                            ? 'Sévérité : $score / 5'
+                            : 'Aucun nid de poule détecté',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ],
@@ -115,8 +121,14 @@ class _ReportResultScreenState extends State<ReportResultScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Transmis à', style: Theme.of(context).textTheme.labelMedium),
-                    Text(_result.targetOffice!, style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Transmis à',
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                    Text(
+                      _result.targetOffice!,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                   ],
                 ),
               ),
@@ -130,7 +142,10 @@ class _ReportResultScreenState extends State<ReportResultScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Fiche de travaux', style: Theme.of(context).textTheme.labelMedium),
+                    Text(
+                      'Fiche de travaux',
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
                     const SizedBox(height: 8),
                     Text(_result.sheetSummary!),
                   ],
@@ -146,7 +161,11 @@ class _ReportResultScreenState extends State<ReportResultScreen> {
           OutlinedButton.icon(
             onPressed: _refreshing ? null : _refreshStatus,
             icon: _refreshing
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.refresh),
             label: const Text('Actualiser le statut'),
           ),

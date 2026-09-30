@@ -5,7 +5,7 @@ import 'package:roadscan_mobile/app/roadscan_app.dart';
 import 'package:roadscan_mobile/services/offline_queue_repository.dart';
 
 void main() {
-  testWidgets('RoadScan app boots into the Accueil tab', (
+  testWidgets('app plays the splash then lands on the Accueil tab', (
     WidgetTester tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -16,7 +16,7 @@ void main() {
     await tester.pumpWidget(RoadScanApp(queueRepository: queueRepository));
     await tester.pumpAndSettle();
 
-    expect(find.text('RoadScan'), findsOneWidget);
+    expect(find.text('Sabeel'), findsOneWidget);
     expect(find.text('Signaler un nid-de-poule'), findsOneWidget);
   });
 }

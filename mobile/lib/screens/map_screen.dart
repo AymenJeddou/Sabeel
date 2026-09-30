@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../app/brand.dart';
 import '../services/offline_queue_repository.dart';
 
 /// The Carte tab (mobile/design/map.png): OpenStreetMap tiles with a pin per
@@ -105,7 +106,7 @@ class _ReportMarker extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1D6FE8),
+        color: sabeelNavy,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 3),
         boxShadow: const [
@@ -149,8 +150,8 @@ class _LegendCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)],
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: sabeelLine),
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,7 +161,8 @@ class _LegendCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: Colors.grey,
+              letterSpacing: 0.8,
+              color: sabeelMuted,
             ),
           ),
           SizedBox(height: 6),
@@ -170,7 +172,7 @@ class _LegendCard extends StatelessWidget {
           SizedBox(height: 4),
           _LegendRow(color: Color(0xFFD93B3B), label: 'Urgent'),
           SizedBox(height: 4),
-          _LegendRow(color: Color(0xFF1D6FE8), label: 'Non évalué'),
+          _LegendRow(color: sabeelNavy, label: 'Non évalué'),
         ],
       ),
     );

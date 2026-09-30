@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sabeel mark (logo SVG paths, 200x260 viewBox) centred in the 108dp
+     adaptive-icon canvas. The amber centre line is left out: it is too thin
+     to survive at launcher sizes. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:translateX="30.92" android:translateY="24"
+        android:scaleX="0.2308" android:scaleY="0.2308">
+        <clip-path android:pathData="M100,250 C64,196 20,152 20,100 A80,80 0 1,1 180,100 C180,152 136,196 100,250 Z" />
+        <path android:fillColor="#1B4F8F"
+            android:pathData="M100,250 C64,196 20,152 20,100 A80,80 0 1,1 180,100 C180,152 136,196 100,250 Z" />
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="28"
+            android:pathData="M44,206 C44,132 154,142 154,92 C154,58 126,36 96,26" />
+    </group>
+</vector>

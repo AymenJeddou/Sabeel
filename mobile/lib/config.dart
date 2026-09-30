@@ -9,5 +9,7 @@
 /// network, use `ngrok http 8000` instead and paste the https URL here.
 ///
 /// Or override without editing: `--dart-define=API_BASE_URL=http://...`.
-const String apiBaseUrl =
-    String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000');
+const String apiBaseUrl = String.fromEnvironment(
+  'API_BASE_URL',
+  defaultValue: 'http://10.0.2.2:8000',
+);
