@@ -9,9 +9,8 @@ import 'camera_capture_screen.dart';
 /// The Accueil tab (mobile/design/main.png, restyled to the Sabeel brand).
 ///
 /// The mockup's "1284 signalements / 312 réparés" stat cards are city-wide
-/// aggregates that only the backend (WP3) can provide, and driving mode is
-/// explicitly deferred past this sprint — both are represented honestly
-/// below rather than faked.
+/// aggregates that only the backend (WP3) can provide, so they're shown
+/// honestly rather than faked. Driving mode opens the one-tap camera.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
@@ -22,16 +21,16 @@ class HomeScreen extends StatelessWidget {
   final OfflineQueueRepository queueRepository;
   final ValueChanged<int> onNavigateToTab;
 
-  void _openDrivingModeStub(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Mode conduite — bientôt disponible.')),
-    );
-  }
-
-  Future<void> _openCamera(BuildContext context) async {
+  Future<void> _openCamera(
+    BuildContext context, {
+    bool drivingMode = false,
+  }) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => CameraCaptureScreen(queueRepository: queueRepository),
+        builder: (_) => CameraCaptureScreen(
+          queueRepository: queueRepository,
+          drivingMode: drivingMode,
+        ),
       ),
     );
   }
@@ -93,7 +92,9 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              _DrivingModeCard(onTap: () => _openDrivingModeStub(context)),
+              _DrivingModeCard(
+                onTap: () => _openCamera(context, drivingMode: true),
+              ),
             ],
           ),
         );
