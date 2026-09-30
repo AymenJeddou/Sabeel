@@ -63,6 +63,7 @@ git checkout -b feature/<short-description>
 # ... work, commit ...
 git push -u origin feature/<short-description>
 # open a PR: base = dev, compare = feature/<short-description>
+good luck
 ```
 
 ## Getting started
