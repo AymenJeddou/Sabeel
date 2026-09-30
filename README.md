@@ -1,43 +1,150 @@
-# RoadScan — Pothole Detection & Management System (Tunisia)
+<div align="center">
 
-A mobile app, a small AI model, a map, and a simple RAG agent — an MVP that turns a citizen's photo of a pothole into a located, graded, and routed repair work order.
+<img src="docs/images/sabeel-logo.gif" alt="Sabeel animated logo" width="260">
 
-**Project length:** 4 weeks · **Budget:** 0 TND (free-tier cloud services only)
-**Full spec:** [`docs/Cahier_de_charges.md`](docs/Cahier_de_charges.md) · **Current sprint plan:** [`docs/Sprint1_Action_Plan.md`](docs/Sprint1_Action_Plan.md)
+# Sabeel · سبيل
 
-## What it does
+**Pothole detection and management for Tunisia.**
+A citizen snaps a photo, an AI grades the pothole, and a repair order that quotes the law lands on the right desk.
 
-1. **Report** — a citizen (or a phone in hands-free driving mode) takes a photo; GPS, time, direction, and speed are captured with it.
-2. **Detect & score** — a YOLOv8n model grades the pothole 1–5 for severity.
-3. **Confirm** — two reports within 5 m of each other merge into one confirmed pothole.
-4. **Write the work sheet** — for confirmed potholes scoring ≥ 3, a RAG agent looks up the real road-type rules and drafts a work order, citing its sources, then routes it to the right office (Municipality / DGPC / Ministry of Equipment).
-5. **Track** — a live map with filters, a per-office priority list, and status updates back to the citizen.
+![Flutter](https://img.shields.io/badge/Flutter-mobile-02569B?logo=flutter&logoColor=white)
+![React](https://img.shields.io/badge/React-dashboard-149ECA?logo=react&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-core%20API-009688?logo=fastapi&logoColor=white)
+![PostGIS](https://img.shields.io/badge/PostGIS-5%20m%20dedup-4169E1?logo=postgresql&logoColor=white)
+![YOLOv8n](https://img.shields.io/badge/YOLOv8n-ONNX%20on%20CPU-111F68)
+![RAG](https://img.shields.io/badge/RAG-Chroma%20%2B%20open%20LLMs-FF9D00?logo=huggingface&logoColor=white)
+![Budget](https://img.shields.io/badge/budget-0%20TND-0F6E6A)
+
+</div>
+
+---
+
+## Why
+
+About 20,000 km of classified roads, thousands of km of city streets, and no shared register of the damage on them. Potholes are reported by phone call, letter or Facebook post: no location, no severity, no follow-up. Meanwhile a road repaired late costs **6 to 8 times** more than one maintained early ([FHWA](https://www.fhwa.dot.gov/publications/focus/98jun/068pm.cfm)).
+
+Sabeel ("the way") closes the gap between *a pothole appears* and *a repair order is sent*.
+
+## How it works
+
+| | Step | What happens |
+|---|---|---|
+| 📸 | **Snap** | A citizen takes a photo. GPS, speed and heading are attached. No account. |
+| 🧠 | **Score** | A YOLOv8n model grades severity 1–5 on a plain CPU (≈ 71 ms). |
+| 📍 | **Confirm** | Two reports within 5 m merge into one confirmed pothole (PostGIS). |
+| 📝 | **Write** | For severity ≥ 3 a RAG agent drafts the work order and cites the real law. |
+| 🏛️ | **Route** | The order goes to the baladiya or the DGPC depending on the road type. |
+| ✅ | **Close** | The authority marks it fixed and the citizen sees it on their phone. |
+
+## The mobile app
+
+For citizens and drivers. One tap to report, a live map of the city, and a status tracker for every report.
+
+<p align="center">
+  <img src="docs/images/mobile-home.jpg" width="19%" alt="Home screen">
+  <img src="docs/images/mobile-map.jpg" width="19%" alt="Map of potholes by severity">
+  <img src="docs/images/mobile-reports.jpg" width="19%" alt="Mes Rapports with status tracker">
+  <img src="docs/images/mobile-pothole.jpg" width="19%" alt="Pothole detail">
+  <img src="docs/images/mobile-chat.jpg" width="19%" alt="Support chat with the authorities">
+</p>
+
+- Anonymous device id, no personal data (Law 2004-63)
+- Offline queue, retried automatically
+- Support chat whose messages land in the authorities' inbox
+- Animated splash, Arabic and French typefaces bundled
+
+## The authorities dashboard
+
+For the baladiya technical services, the DGPC and the Ministry of Equipment.
+
+<p align="center">
+  <img src="docs/images/dashboard-overview.jpg" width="49%" alt="Overview: KPIs, weekly trend, priority queue">
+  <img src="docs/images/dashboard-map.jpg" width="49%" alt="Map with a pothole's case file and work order">
+</p>
+
+- **Overview**: open / urgent / overdue / repaired KPIs, weekly trend and a priority queue with deadlines (48 h for severity 5, 7 days for 4)
+- **Map**: every pothole as a case file with photo, citizens, deadline, office and the RAG work order; confirm, repair or reject in one click
+- **Signalements**: searchable table with CSV export
+- **Messages**: inbox for the citizens' support chat with quick replies
+
+### Sabeel Assist
+
+An AI assistant for the technical service. Ask in French, Arabic or English; it answers only from the live database, cites pothole references you can open on the map, and follows the repair playbook for each severity.
+
+<p align="center">
+  <img src="docs/images/dashboard-assistant.jpg" width="80%" alt="Sabeel Assist answering with pothole references and a map">
+</p>
+
+## The AI
+
+<table>
+<tr>
+<td width="45%"><img src="docs/images/detection.jpg" alt="Our model detecting a pothole"></td>
+<td>
+
+**Detection** — YOLOv8n trained on RDD2022 (pothole class D40) and an annotated pothole dataset from Hugging Face, exported to a 12 MB ONNX file and served with ONNX Runtime on a CPU. Severity comes from the size of the box.
+
+**Work orders** — a RAG agent retrieves the matching rules (multilingual MiniLM embeddings in Chroma), an open-weight LLM writes the sheet, and every citation is checked against what it was shown. One bad citation and the draft is replaced by a template built from the real excerpts. Legal base: Loi organique 2018-29 (art. 69) and Loi 86-17.
+
+</td>
+</tr>
+</table>
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    phone["📱 Mobile app<br/>Flutter"] -->|POST /reports| api
+    web["🖥️ Dashboard<br/>React + Vite"] -->|REST| api
+    api["⚙️ Core API<br/>FastAPI"] --> db[("PostgreSQL<br/>+ PostGIS")]
+    api -->|infer| vision["🧠 YOLOv8n<br/>ONNX Runtime"]
+    api -->|/generate · /chat| rag["📝 RAG service<br/>Chroma + LLM"]
+    rag --> hf["Hugging Face<br/>Llama 3.1 · Qwen 2.5"]
+```
+
 | Component | Folder | Stack |
 |---|---|---|
-| Mobile app | [`mobile/`](mobile) | Flutter — capture, map, offline queue, driving mode |
-| Core API | [`backend/app`](backend/app) | FastAPI + Supabase/PostGIS — reports, map, status |
-| Vision service | [`backend/vision`](backend/vision) / [`ml-training/`](ml-training) | YOLOv8n, ONNX Runtime (CPU) |
-| RAG service | [`rag-service/`](rag-service) | Chroma + free LLM (Hugging Face) — work-sheet generation |
+| Mobile app | [`mobile/`](mobile) | Flutter, flutter_map (OpenStreetMap) |
+| Authorities dashboard | [`dashboard/`](dashboard) | React, TypeScript, Vite, Leaflet |
+| Core API | [`backend/app`](backend/app) | FastAPI, SQLAlchemy, PostgreSQL + PostGIS |
+| Vision model | [`ml-training/`](ml-training), [`backend/vision`](backend/vision) | YOLOv8n, ONNX Runtime (CPU) |
+| RAG service | [`rag-service/`](rag-service) | Chroma, sentence-transformers, Hugging Face Inference |
 
-## Team & roles
+## Quick start
 
-| Work package | Owner | Co-owner |
+You need PostgreSQL 16 with PostGIS, Python 3.12, Node 20+ and Flutter.
+
+```bash
+# 1. Database: create "roadscan", apply backend/app/db/schema.sql, set DATABASE_URL in .env
+
+# 2. RAG service (needs HF_API_TOKEN in rag-service/.env)
+cd rag-service && python -m uvicorn app.main:app --port 8001
+
+# 3. Core API, from the repo root
+python -m uvicorn backend.app.main:app --port 8002
+
+# 4. Demo data: real Tunis streets, real pothole photos, sample conversations
+python -m backend.app.seed
+
+# 5. Dashboard → http://localhost:5173
+cd dashboard && npm install && npm run dev
+
+# 6. Mobile app (phone over USB: adb reverse tcp:8002 tcp:8002)
+cd mobile && flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8002
+```
+
+Each component's README has the details: [`mobile`](mobile/README.md) · [`dashboard`](dashboard/README.md) · [`backend/app`](backend/app/README.md) · [`ml-training`](ml-training/README.md) · [`rag-service`](rag-service/README.md). Shared environment variables are listed in [`.env.example`](.env.example).
+
+## Team
+
+| Work package | Lead | Co-lead |
 |---|---|---|
 | WP1 — AI detection model | [@tharaaoueslati-lang](https://github.com/tharaaoueslati-lang) | [@jasseurchibani](https://github.com/jasseurchibani) |
 | WP2 — RAG agent & work sheet | [@AymenJeddou](https://github.com/AymenJeddou) | [@JedBelhaj](https://github.com/JedBelhaj) |
 | WP3 — Core API & geospatial backend | [@jasseurchibani](https://github.com/jasseurchibani) | [@tharaaoueslati-lang](https://github.com/tharaaoueslati-lang) |
 | WP4 — Mobile app (citizen & driving mode) | [@JedBelhaj](https://github.com/JedBelhaj) | [@AymenJeddou](https://github.com/AymenJeddou) |
 
-Task-level breakdowns and the shared data contracts between work packages live in [`docs/Sprint1_Action_Plan.md`](docs/Sprint1_Action_Plan.md). Each sprint's tasks are tracked as GitHub Issues, one per work package.
-
-## Sprint schedule
-
-- **Sprint 1** — foundations (skeleton for every work package, data contracts frozen). **Ends Monday, September 21.**
-- Sprints 2–3 — core build and integration.
-- Sprint 4 — hardening, final checklist, live demo.
+Full specification: [`docs/Cahier_de_charges.md`](docs/Cahier_de_charges.md) · Sprint plan and data contracts: [`docs/Sprint1_Action_Plan.md`](docs/Sprint1_Action_Plan.md). Each sprint's tasks are tracked as GitHub Issues, one per work package.
 
 ## Workflow — how we work (Agile / Scrum)
 
@@ -54,18 +161,14 @@ This repo follows a strict branch/PR workflow. It applies to everyone, including
 9. **Use exactly the field names and shapes defined in the data contracts** (`docs/Sprint1_Action_Plan.md`, Section 4) — a locally renamed field is the most common source of integration bugs across work packages.
 10. **All timestamps are UTC, ISO 8601, with a trailing `Z`.**
 
-### Typical flow
-
-```
-git checkout dev
-git pull
+```bash
+git checkout dev && git pull
 git checkout -b feature/<short-description>
 # ... work, commit ...
 git push -u origin feature/<short-description>
 # open a PR: base = dev, compare = feature/<short-description>
-good luck
 ```
 
-## Getting started
-
-Each component has its own README with setup instructions: [`mobile/README.md`](mobile/README.md), [`backend/app/README.md`](backend/app/README.md), [`backend/vision/README.md`](backend/vision/README.md), [`ml-training/README.md`](ml-training/README.md), [`rag-service/README.md`](rag-service/README.md). Shared environment variables are listed in [`.env.example`](.env.example).
+<div align="center">
+<sub>Built in Tunisia by Aymen Jeddou, Tharaa Oueslati, Jasseur Chibani and Jed Belhaj Mohamed · September 2026</sub>
+</div>
