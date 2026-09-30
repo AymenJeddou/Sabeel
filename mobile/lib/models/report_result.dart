@@ -17,7 +17,10 @@ class ReportResult {
     this.targetOffice,
   });
 
-  factory ReportResult.fromJson(Map<String, dynamic> json, {String? deviceReportId}) {
+  factory ReportResult.fromJson(
+    Map<String, dynamic> json, {
+    String? deviceReportId,
+  }) {
     return ReportResult(
       reportId: json['report_id'] as String,
       deviceReportId: deviceReportId ?? json['device_report_id'] as String,

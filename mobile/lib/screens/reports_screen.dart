@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../app/brand.dart';
 import '../models/queued_report.dart';
 import '../services/offline_queue_repository.dart';
 
@@ -51,12 +52,12 @@ class ReportsScreen extends StatelessWidget {
                 children: [
                   const Text(
                     'Mes Rapports',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${reports.length} rapport(s) depuis cet appareil',
-                    style: const TextStyle(color: Colors.grey),
+                    style: const TextStyle(color: sabeelMuted),
                   ),
                 ],
               ),
@@ -95,7 +96,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               "Aucun signalement pour le moment.\nUtilise le bouton caméra depuis l'accueil.",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600),
+              style: const TextStyle(color: sabeelMuted),
             ),
           ],
         ),
@@ -117,8 +118,8 @@ class _ReportCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6)],
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: sabeelLine),
       ),
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -154,7 +155,7 @@ class _ReportCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${report.reference} · ${_formatDate(draft.capturedAt)}',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: const TextStyle(fontSize: 12, color: sabeelMuted),
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
@@ -164,12 +165,12 @@ class _ReportCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFCEFCB),
+                    color: sabeelAmber.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
                     "En attente d'envoi",
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],

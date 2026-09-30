@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 
 import '../screens/root_shell.dart';
+import '../screens/splash_screen.dart';
 import '../services/offline_queue_repository.dart';
-
-const roadScanBlue = Color(0xFF1D6FE8);
-const roadScanMuted = Color(0xFF6B7280);
+import 'brand.dart';
 
 class RoadScanApp extends StatelessWidget {
   const RoadScanApp({super.key, required this.queueRepository});
@@ -14,35 +13,97 @@ class RoadScanApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rounded = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(14),
+    );
     return MaterialApp(
-      title: 'RoadScan',
+      title: 'Sabeel',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: roadScanBlue),
-        scaffoldBackgroundColor: const Color(0xFFF5F6FA),
-        textTheme: GoogleFonts.poppinsTextTheme(),
+        fontFamily: bodyFont,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: sabeelNavy,
+          primary: sabeelNavy,
+          secondary: sabeelAmber,
+          tertiary: sabeelTeal,
+          surface: Colors.white,
+          onSurface: sabeelInk,
+        ),
+        scaffoldBackgroundColor: sabeelCream,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: sabeelCream,
+          foregroundColor: sabeelInk,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
+          // No titleTextStyle: the M3 default derives its color from each
+          // AppBar's foregroundColor (the camera screen is white-on-black).
+        ),
+        cardTheme: CardThemeData(
+          color: Colors.white,
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: sabeelLine),
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: sabeelNavy,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(0, 52),
+            elevation: 0,
+            shape: rounded,
+            textStyle: const TextStyle(
+              fontFamily: bodyFont,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: sabeelNavy,
+            minimumSize: const Size(0, 52),
+            side: const BorderSide(color: sabeelNavy, width: 1.2),
+            shape: rounded,
+            textStyle: const TextStyle(
+              fontFamily: bodyFont,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          backgroundColor: sabeelInk,
+          behavior: SnackBarBehavior.floating,
+          shape: rounded,
+        ),
         navigationBarTheme: NavigationBarThemeData(
           backgroundColor: Colors.white,
-          indicatorColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          indicatorColor: sabeelNavy.withValues(alpha: 0.10),
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             final selected = states.contains(WidgetState.selected);
-            return GoogleFonts.poppins(
-              fontSize: 11,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-              color: selected ? roadScanBlue : roadScanMuted,
+            return TextStyle(
+              fontFamily: bodyFont,
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              color: selected ? sabeelNavy : sabeelMuted,
             );
           }),
           iconTheme: WidgetStateProperty.resolveWith((states) {
             final selected = states.contains(WidgetState.selected);
             return IconThemeData(
               size: 24,
-              color: selected ? roadScanBlue : roadScanMuted,
+              color: selected ? sabeelNavy : sabeelMuted,
             );
           }),
         ),
       ),
-      home: RootShell(queueRepository: queueRepository),
+      home: SplashScreen(
+        next: (_) => RootShell(queueRepository: queueRepository),
+      ),
     );
   }
 }
