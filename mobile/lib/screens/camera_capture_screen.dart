@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
@@ -5,10 +7,19 @@ import '../services/offline_queue_repository.dart';
 import 'report_preview_screen.dart';
 
 /// The camera screen: a live in-app preview with a shutter button.
+///
+/// [drivingMode] turns it into a dashcam-style live view (live indicator,
+/// elapsed time, stop button). It's UI only for now: nothing is recorded
+/// or analysed yet.
 class CameraCaptureScreen extends StatefulWidget {
-  const CameraCaptureScreen({super.key, required this.queueRepository});
+  const CameraCaptureScreen({
+    super.key,
+    required this.queueRepository,
+    this.drivingMode = false,
+  });
 
   final OfflineQueueRepository queueRepository;
+  final bool drivingMode;
 
   @override
   State<CameraCaptureScreen> createState() => _CameraCaptureScreenState();
@@ -148,6 +159,18 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.drivingMode) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            _buildBody(),
+            const SafeArea(child: _DrivingOverlay()),
+          ],
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -197,6 +220,7 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
             !controller.value.isInitialized) {
           return const Center(child: CircularProgressIndicator());
         }
+        if (widget.drivingMode) return Center(child: CameraPreview(controller));
         return Stack(
           fit: StackFit.expand,
           children: [
@@ -229,6 +253,126 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
           ],
         );
       },
+    );
+  }
+}
+
+/// Dashcam chrome over the live view: pulsing "EN DIRECT" dot, elapsed
+/// time, a status line and a stop button.
+class _DrivingOverlay extends StatefulWidget {
+  const _DrivingOverlay();
+
+  @override
+  State<_DrivingOverlay> createState() => _DrivingOverlayState();
+}
+
+class _DrivingOverlayState extends State<_DrivingOverlay>
+    with SingleTickerProviderStateMixin {
+  final _clock = Stopwatch()..start();
+  late final Timer _tick = Timer.periodic(
+    const Duration(seconds: 1),
+    (_) => setState(() {}),
+  );
+  late final _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
+
+  @override
+  void initState() {
+    super.initState();
+    _tick;
+  }
+
+  @override
+  void dispose() {
+    _tick.cancel();
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final e = _clock.elapsed;
+    final time =
+        '${e.inMinutes.toString().padLeft(2, '0')}:'
+        '${(e.inSeconds % 60).toString().padLeft(2, '0')}';
+    const chip = BoxDecoration(
+      color: Color(0x99000000),
+      borderRadius: BorderRadius.all(Radius.circular(20)),
+    );
+    const label = TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.w600,
+      fontFeatures: [FontFeature.tabularFigures()],
+    );
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: chip,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FadeTransition(
+                      opacity: _pulse,
+                      child: const Icon(
+                        Icons.circle,
+                        color: Color(0xFFE5484D),
+                        size: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('EN DIRECT  $time', style: label),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: chip,
+                child: const Text('Mode conduite', style: label),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: chip,
+            child: const Text(
+              'Détection automatique — bientôt disponible',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: 72,
+            height: 72,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                shape: const CircleBorder(),
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFFE5484D),
+                padding: EdgeInsets.zero,
+              ),
+              child: const Icon(Icons.stop_rounded, size: 40),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text('Arrêter', style: label),
+        ],
+      ),
     );
   }
 }
