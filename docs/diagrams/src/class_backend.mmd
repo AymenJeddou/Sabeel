@@ -1,0 +1,61 @@
+classDiagram
+    class Report {
+        +UUID report_id
+        +str device_report_id
+        +str photo_url
+        +float lat
+        +float lon
+        +float gps_accuracy_m
+        +float speed_kmh
+        +float direction_deg
+        +datetime captured_at
+        +ReportSource source
+        +int score
+        +float confidence
+        +ReportStatus status
+        +UUID cluster_id
+        +str sheet_text
+        +str target_office
+    }
+    class ReportStatus {
+        <<enumeration>>
+        NEW
+        CONFIRMED
+        SHEET_SENT
+        FIXED
+    }
+    class ReportSource {
+        <<enumeration>>
+        MANUAL
+        DRIVING_MODE
+    }
+    class StatusMachine {
+        +FORWARD_ORDER
+        +is_valid_transition(current, new) bool
+    }
+    class DedupService {
+        +find_or_join_cluster(db, lat, lon, max_m) UUID
+    }
+    class VisionClient {
+        +run_inference(bytes) dict
+    }
+    class RagClient {
+        +generate(lat, lon, score, road_type) dict
+    }
+    class ReportsRouter {
+        +create_report()
+        +get_report()
+        +update_report_status()
+    }
+    class MapRouter {
+        +get_map(bbox)
+    }
+
+    Report --> ReportStatus
+    Report --> ReportSource
+    ReportsRouter ..> Report
+    ReportsRouter ..> StatusMachine
+    ReportsRouter ..> DedupService
+    ReportsRouter ..> VisionClient
+    ReportsRouter ..> RagClient
+    MapRouter ..> Report

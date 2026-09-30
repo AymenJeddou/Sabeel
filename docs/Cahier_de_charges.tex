@@ -1,0 +1,824 @@
+% =====================================================================
+%  RoadScan -- Cahier des charges (LaTeX edition)
+%  Build:  pdflatex Cahier_de_charges.tex  (run twice for the TOC)
+%  Figures are read from ./diagrams/*.png (rendered from diagrams/src).
+% =====================================================================
+\documentclass[11pt,a4paper,oneside]{report}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[english]{babel}
+\usepackage[a4paper,margin=2.5cm,headheight=14pt]{geometry}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{rotating}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{amssymb}
+\usepackage{textcomp}
+\usepackage{caption}
+\usepackage[hidelinks,pdfusetitle]{hyperref}
+
+\definecolor{accent}{HTML}{1F3A5F}
+\definecolor{lightgray}{HTML}{F2F2F2}
+\definecolor{okgreen}{HTML}{2E7D32}
+\definecolor{warnorange}{HTML}{EF6C00}
+\definecolor{planblue}{HTML}{546E7A}
+
+% ---- status markers -------------------------------------------------
+\newcommand{\sDone}{\textcolor{okgreen}{\textbf{Done}}}
+\newcommand{\sPart}{\textcolor{warnorange}{\textbf{Partial}}}
+\newcommand{\sPlan}{\textcolor{planblue}{\textbf{Planned}}}
+
+% ---- layout ---------------------------------------------------------
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt}
+\renewcommand{\arraystretch}{1.25}
+\setlist{itemsep=2pt,topsep=4pt}
+\captionsetup{font=small,labelfont=bf}
+\titleformat{\chapter}[hang]{\Large\bfseries\color{accent}}{\thechapter}{0.8em}{}[\vspace{-0.4em}\color{accent}\titlerule]
+\titleformat{\section}{\large\bfseries\color{accent}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{accent}}{\thesubsection}{0.6em}{}
+\titlespacing*{\chapter}{0pt}{-10pt}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textsc{RoadScan --- Cahier des charges}}
+\fancyhead[R]{\small\leftmark}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+\lstset{basicstyle=\ttfamily\footnotesize,backgroundcolor=\color{lightgray},
+  frame=single,rulecolor=\color{lightgray},breaklines=true,columns=fullflexible,
+  keepspaces=true,showstringspaces=false,upquote=true}
+
+% ---- helpers --------------------------------------------------------
+\newcommand{\why}[1]{\begin{quote}\small\textbf{Rationale.} #1\end{quote}}
+\newcommand{\figimg}[3]{% file, caption, label
+  \begin{figure}[H]\centering
+  \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{diagrams/#1.png}
+  \caption{#2}\label{#3}\end{figure}}
+\newcommand{\figwide}[3]{%
+  \begin{sidewaysfigure}\centering
+  \includegraphics[width=0.95\linewidth,height=0.72\textheight,keepaspectratio]{diagrams/#1.png}
+  \caption{#2}\label{#3}\end{sidewaysfigure}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\begin{document}
+\raggedbottom
+
+% =====================================================================
+%  COVER PAGE
+% =====================================================================
+\begin{titlepage}
+\centering
+{\large\textsc{Projet F\'ed\'erateur --- Cycle Ing\'enieur (CI3)}\par}
+\vspace{2.2cm}
+{\color{accent}\rule{\linewidth}{1.2pt}\par}
+\vspace{0.6cm}
+{\Huge\bfseries\color{accent} CAHIER DES CHARGES\par}
+\vspace{0.4cm}
+{\LARGE RoadScan\par}
+{\large Pothole Detection \& Management System --- Tunisia\par}
+\vspace{0.4cm}
+{\color{accent}\rule{\linewidth}{1.2pt}\par}
+\vspace{1.2cm}
+{\itshape A mobile app, an AI detection model, a live map and a RAG agent\\
+that turns a citizen's photo into a repair work order.\par}
+\vspace{2cm}
+\begin{tabular}{@{}rl@{}}
+\textbf{Document:} & Functional and technical specification\\
+\textbf{Version:} & 5.0 --- aligned with the repository structure\\
+\textbf{Date:} & September 2026\\
+\textbf{Duration:} & 4 weeks (4 one-week sprints)\\
+\textbf{Budget:} & 0~TND --- free-tier services only\\
+\textbf{Readers:} & Supervisors, municipalities, DGPC, Ministry of Equipment
+\end{tabular}
+\vfill
+{\large\textbf{Team}\par}
+\vspace{0.2cm}
+Aymen Jeddou \quad Tharaa Oueslati \quad Jasseur Chibani \quad Jed Belhaj Mohamed
+\vspace{1cm}
+\end{titlepage}
+
+% =====================================================================
+%  DOCUMENT CONTROL + TOC
+% =====================================================================
+\chapter*{Document control}
+\addcontentsline{toc}{chapter}{Document control}
+\begin{longtable}{@{}L{1.6cm}L{2.6cm}L{9.8cm}@{}}
+\toprule\textbf{Version} & \textbf{Date} & \textbf{Change}\\\midrule\endhead
+4.0 & Sept.\ 2026 & Initial ``simple version'' of the specification.\\
+5.0 & Sept.\ 2026 & Restructured to mirror the repository (work packages WP1--WP4, WP-T);
+architecture decisions taken in Sprint~1 recorded (RAG as a separate service,
+\texttt{manual}/\texttt{driving\_mode} sources, frozen contracts); UML diagrams added;
+implementation status added for every feature.\\
+\bottomrule
+\end{longtable}
+
+\textbf{Status markers used in this document:}
+\sDone{} = implemented in the repository and covered by tests or a runnable demo;
+\sPart{} = skeleton or stub exists, behaviour incomplete;
+\sPlan{} = specified, not started.
+
+\tableofcontents
+\listoffigures
+
+% =====================================================================
+\chapter{Introduction and context}
+% =====================================================================
+\section{Problem statement}
+Tunisia has roughly 20{,}000~km of classified roads (national, regional, local) plus thousands
+of kilometres of city streets. Their surface degrades quickly for three reasons:
+\begin{itemize}
+\item \textbf{Heat} --- summers above 45\,\textdegree C followed by heavy autumn rain crack the surface.
+\item \textbf{Water} --- water enters the cracks and weakens the base layer; a pothole can appear within days.
+\item \textbf{Slow, unstructured reporting} --- potholes are reported by phone, letter or social media,
+with no common format, no exact location and no follow-up.
+\end{itemize}
+\why{A pothole repaired early costs far less than one left for months. The fastest lever on cost is
+therefore to shorten the delay between ``pothole appears'' and ``repair order issued''. This is the single
+idea RoadScan implements.}
+
+\section{Existing solutions and positioning}
+\begin{longtable}{@{}L{4cm}L{4.6cm}L{5.2cm}@{}}
+\toprule\textbf{Approach} & \textbf{Strength} & \textbf{Limitation}\\\midrule\endhead
+Survey vehicles with cameras & Accurate & Expensive, low refresh frequency\\
+Generic complaint apps & Cheap, easy & No automatic grading, no structured output\\
+Research AI detectors & Good detection & Stop at detection, no repair order\\
+\textbf{RoadScan} & Crowd reporting + automatic severity grading + rule-grounded work sheet
+& Depends on citizen adoption; MVP scope\\\bottomrule
+\end{longtable}
+RoadScan combines the low cost of crowd reporting, the automatic grading of AI detectors and, as its
+differentiating step, converts a GPS point into a work sheet that \textbf{quotes the applicable legal rule}
+through a Retrieval-Augmented Generation (RAG) agent.
+
+\begin{center}\itshape photo $\rightarrow$ score $\rightarrow$ deduplicated map dot $\rightarrow$
+rule-cited work sheet $\rightarrow$ routed to the right office $\rightarrow$ status tracked until fixed.\end{center}
+
+% =====================================================================
+\chapter{Objectives and measurable targets}
+% =====================================================================
+\section{General objectives}
+\begin{longtable}{@{}L{1cm}L{3cm}L{10cm}@{}}
+\toprule\textbf{\#} & \textbf{Objective} & \textbf{Description}\\\midrule\endhead
+O1 & Capture & Obtain a photo (citizen) or a video frame (driving phone) with GPS, heading and speed.\\
+O2 & Detect & Detect potholes and grade severity 1--5 with an open YOLOv8n model running on CPU.\\
+O3 & Write the sheet & Turn a confirmed serious pothole into a work order through a RAG agent grounded on real texts.\\
+O4 & Show the map & Display all reports on one live map, merged by proximity and prioritised.\\\bottomrule
+\end{longtable}
+
+\section{Measurable targets}
+\begin{longtable}{@{}L{6.2cm}L{3cm}L{5cm}@{}}
+\toprule\textbf{Indicator} & \textbf{Target} & \textbf{Measured on}\\\midrule\endhead
+Model accuracy (mAP@50) & $\geq 0.75$ & Held-out test set\\
+Detection latency & $<250$~ms & One photo, CPU\\
+Time to report (open app $\rightarrow$ done) & $<15$~s & Real-device test\\
+Full report round trip (no RAG) & $<3$~s & API + database\\
+Work-sheet generation time & $<20$~s & RAG service\\
+Sheets rated ``ready to use'' & $\geq 90\,\%$ & Human review\\
+Duplicate-merge distance & $<5$~m & PostGIS query\\
+Driving-mode runtime & $\geq 20$~min & Phone as dashcam\\
+Monthly infrastructure cost & 0~TND & Free plans only\\\bottomrule
+\end{longtable}
+\why{0.75 mAP is the level at which the model is useful as a filter. 250~ms keeps a request cheap on a free CPU
+tier. 15~s is roughly how long a person will stand next to a pothole to report it. 5~m matches typical urban
+smartphone GPS accuracy.}
+
+% =====================================================================
+\chapter{Stakeholders and scope}
+% =====================================================================
+\section{Stakeholders}
+\begin{longtable}{@{}L{3.6cm}L{4.6cm}L{5.6cm}@{}}
+\toprule\textbf{Actor} & \textbf{Role} & \textbf{Main expectation}\\\midrule\endhead
+Citizen / driver & Sees the pothole first & Report in $<15$~s, no account\\
+Volunteer driver & Drives with the phone on the windscreen & Automatic reports, low battery use\\
+Municipality (baladiya) & Manages city streets & Ready-to-use, sorted, rule-cited sheets\\
+DGPC & Manages national/regional roads & One combined view by road and region\\
+Ministry of Equipment & Plans and funds road works & Consolidated, duplicate-free data\\\bottomrule
+\end{longtable}
+
+\section{In scope (MVP)}
+\begin{itemize}
+\item Photo reporting with GPS, heading, speed (F1) and an offline queue.
+\item Map with filters and proximity-based deduplication (F2).
+\item RAG work-sheet generation with cited rules (F3).
+\item Priority list per office and status workflow (F4).
+\item Citizen feedback on own reports without an account (F5).
+\item Hands-free driving mode (F6).
+\item Export as CSV / GeoJSON.
+\end{itemize}
+
+\section{Out of scope}
+\begin{longtable}{@{}L{7cm}L{7cm}@{}}
+\toprule\textbf{Excluded item} & \textbf{Reason}\\\midrule\endhead
+Accounts, profiles, points, leaderboards & No login keeps reporting friction minimal\\
+Dedicated dashcam hardware & 0~TND hardware budget\\
+Direct integration into municipal IT systems & Files only for the MVP\\
+Automatic repair cost estimation & Separate project\\
+App-store publication & An APK is sufficient for the demo\\
+Motorways (\texttt{A}, Tunisie Autoroutes) & Different managing body\\\bottomrule
+\end{longtable}
+
+% =====================================================================
+\chapter{Functional requirements}
+% =====================================================================
+\section{Feature summary}
+\begin{longtable}{@{}L{1cm}L{6cm}L{5cm}L{2cm}@{}}
+\toprule\textbf{ID} & \textbf{Feature} & \textbf{Owner WP} & \textbf{Status}\\\midrule\endhead
+F1 & Photo capture and report & WP4 (app), WP1 (score), WP3 (API) & \sPart\\
+F2 & Map with filters and deduplication & WP3, WP4 & \sPart\\
+F3 & Work-sheet generation (RAG) & WP2, WP3 & \sPart\\
+F4 & Priority list and status workflow & WP3, WP4 & \sPart\\
+F5 & Citizen feedback on own reports & WP4, WP3 & \sPart\\
+F6 & Hands-free driving mode & WP4, WP1 & \sPlan\\\bottomrule
+\end{longtable}
+
+\section{F1 --- Photo capture and report}
+\textit{As a citizen, I take a photo of a pothole and the app captures my exact position and grades it
+without me typing anything.}
+\begin{itemize}
+\item The app sends: photo, \texttt{lat}, \texttt{lon}, \texttt{gps\_accuracy\_m}, \texttt{speed\_kmh},
+\texttt{direction\_deg}, \texttt{captured\_at} (UTC), \texttt{source} and a phone-generated \texttt{device\_report\_id}.
+\item The vision model returns a whole-number \texttt{score} 1--5 and a \texttt{confidence} in $[0,1]$.
+\item Above about 40~km/h a manual photo is likely blurred; it is flagged for review rather than rejected.
+\item Offline, the report is stored in a local queue and uploaded later; the \texttt{device\_report\_id} is never regenerated.
+\item Without GPS permission the app explains why the permission is needed.
+\end{itemize}
+
+\begin{longtable}{@{}L{1.2cm}L{4cm}L{2cm}L{6.4cm}@{}}
+\toprule\textbf{Score} & \textbf{Meaning} & \textbf{Colour} & \textbf{System behaviour}\\\midrule\endhead
+1 & Small crack / hole & Green & Counted only\\
+2 & Low severity & Green & Counted, alert if clustered\\
+3 & Medium & Orange & Sheet generated once confirmed\\
+4 & High & Orange & Sheet generated, repair soon\\
+5 & Serious / dangerous & Red & Sheet generated, urgent\\\bottomrule
+\end{longtable}
+\textbf{Implementation note.} The score is computed by \texttt{score\_from\_detections()} in
+\texttt{ml-training/severity\_scoring.py} from the \emph{relative area} of the largest confident bounding box
+(thresholds 0.5\,\%, 1.5\,\%, 4\,\%, 8\,\% of the image), plus one level for confidence $>0.85$. Depth in
+millimetres cannot be measured from a single 2-D photo (decision AD-4).
+
+\textbf{Acceptance.} (1) Photo and location reach the API in one request; (2) \texttt{score}
+$\in\{1,\dots,5\}$, \texttt{confidence} $\in[0,1]$; (3) an offline report is delivered exactly once after
+reconnection; (4) open app $\rightarrow$ report sent in $<15$~s.
+
+\textbf{Status:} \sPart{} --- capture, preview and result screens, GPS/heading reading and the offline-queue
+repository exist in \texttt{mobile/lib}; the API stores reports and runs ONNX inference. Automatic queue flushing is still to be wired.
+
+\section{F2 --- Map with filters and deduplication}
+\textit{As a city officer, I open a map, see problem spots at a glance and never see the same pothole twice.}
+\begin{itemize}
+\item Full-screen OpenStreetMap; each pothole is a dot coloured by score.
+\item A new report within \textbf{5~m} of an existing one shares its \texttt{cluster\_id} and the state moves from
+\texttt{new} to \texttt{confirmed}.
+\item The proximity test runs \textbf{in the database} (PostGIS \texttt{ST\_DWithin} on a GiST index), never on the phone.
+\item \texttt{GET /map} returns the reports in the current viewport; tapping a dot shows the record.
+\item Filters by score, status and region; marker clustering by zoom level for 5{,}000+ points.
+\end{itemize}
+\textbf{Acceptance.} Two reports 3~m apart share a \texttt{cluster\_id} and are \texttt{confirmed}; two reports
+30~m apart stay independent; the map stays fluid with 5{,}000+ points.
+
+\textbf{Status:} \sPart{} --- deduplication and \texttt{GET /map?bbox=} are done; the map screen exists;
+\texttt{sev}/\texttt{state} filters and marker clustering are planned.
+
+\section{F3 --- Work-sheet generation (RAG)}
+\textit{As a technical manager, a confirmed serious pothole becomes a real work order routed to the right
+office with the applicable rules quoted.}
+
+\textbf{Trigger.} Automatic, when \texttt{status = confirmed} \emph{and} \texttt{score} $\geq$
+\texttt{SCORE\_THRESHOLD\_FOR\_SHEET} (default 3). No user action.
+
+\textbf{Processing (RAG service).}
+\begin{enumerate}
+\item Determine the road type (\texttt{urbain\_principal}, \texttt{urbain\_secondaire}, \texttt{rural}, \texttt{autoroute}, \texttt{piste}).
+\item Retrieve the top-5 rule chunks from Chroma (multilingual embeddings), discarding matches below a similarity floor.
+\item Build a prompt forcing the LLM to cite a rule identifier for every claim and to answer ``not enough rules'' when nothing matches.
+\item Call the primary LLM (Llama~3.1~8B~Instruct), then the backup (Qwen~2.5~72B~Instruct), then a deterministic template if the output is invalid.
+\item A citation guard rejects any citation absent from the retrieved set.
+\item Return \texttt{sheet\_text}, \texttt{rule\_citations}, \texttt{target\_office}, \texttt{road\_type}.
+\end{enumerate}
+\why{A fixed template cannot adapt to the road type or quote the right rule; an unconstrained LLM can invent
+rules, which is unacceptable in an official document. RAG restricts the model to real text and every line
+stays traceable to its source.}
+
+\textbf{Acceptance.} Every sheet cites at least one real, retrievable rule; \texttt{target\_office} is never
+empty and belongs to \{Municipality, DGPC, Ministry of Equipment\}; a sheet is produced in $<20$~s; a
+generation failure never blocks report creation (the report stays \texttt{confirmed}).
+
+\textbf{Status:} \sPart{} --- pipeline, retrieval, citation guard, fallback and tests exist under
+\texttt{rag-service/}; the corpus combines \texttt{rules\_real} (Law 2018-29, Law 86-17) with
+\texttt{rules\_placeholder}. The current API integration is a synchronous HTTP call inside \texttt{POST /reports};
+a background task is planned.
+
+\section{F4 --- Priority list and status workflow}
+\textit{As a city, I want a sorted list of what I must fix and a button to mark it done.}
+\begin{itemize}
+\item Each office sees only its own potholes, sorted by urgency $\times$ traffic $\times$ age.
+\item Status moves strictly forward: \texttt{new} $\rightarrow$ \texttt{confirmed} $\rightarrow$ \texttt{sheet\_sent}
+$\rightarrow$ \texttt{fixed}; any other transition is rejected with \textbf{HTTP 409}.
+\item Every change is time-stamped; the list is exportable as CSV / GeoJSON.
+\end{itemize}
+\textbf{Status:} \sPart{} --- state machine and \texttt{PATCH /reports/\{report\_id\}} are done with tests;
+the \texttt{report\_events} history table, per-office queue and exports are planned.
+
+\section{F5 --- Citizen feedback}
+\textit{As a driver, I want to know my report was seen and whether it has been fixed.}
+No account: the phone stores the \texttt{device\_report\_id} of each report it created;
+\texttt{GET /reports/\{device\_report\_id\}} returns \texttt{status}, \texttt{score}, \texttt{sheet\_summary};
+a local notification appears when a tracked report becomes \texttt{fixed}.
+\why{All data is donated by citizens; proof that reporting has an effect is the only lasting incentive.}
+\textbf{Status:} \sPart{} --- endpoint done; ``My reports'' screen exists on mock data; polling and notification planned.
+
+\section{F6 --- Hands-free driving mode}
+\textit{As a driver, I put the phone on the windscreen and the app finds and reports potholes on its own.}
+\begin{itemize}
+\item Frames are sampled at a fixed low rate (target 1 frame/s, final value fixed after the Sprint~3 blur/battery test --- AD-8).
+\item A pothole is reported only after \textbf{3 consecutive positive frames}.
+\item Capture is suspended when the vehicle is stationary and above \textbf{80~km/h}.
+\item Reports use \texttt{source = driving\_mode} and follow the same deduplication as F2.
+\item Empty frames are discarded and never uploaded; full trips are never stored.
+\end{itemize}
+\textbf{Acceptance.} 20+ minutes without crash or overheating; only confirmed detections uploaded; driving-mode
+reports appear on the same map as manual ones. \textbf{Status:} \sPlan{} (Sprint~3).
+
+% =====================================================================
+\chapter{Use case model}
+% =====================================================================
+Five human actors use the system directly. The work-sheet action is not triggered by any user: it is an
+automatic extension executed when a pothole becomes confirmed with a score of at least~3.
+
+\figimg{use_case}{Use case diagram}{fig:usecase}
+
+\begin{table}[H]\centering
+\caption{Actor--feature matrix ($\bullet$ main user, $\circ$ read-only)}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule & F1 & F2 & F3 & F4 & F5 & F6 & Export\\\midrule
+Citizen & $\bullet$ & $\circ$ & & & $\bullet$ & & \\
+Volunteer driver & & $\circ$ & & & $\bullet$ & $\bullet$ & \\
+Municipality & & $\bullet$ & $\bullet$ & $\bullet$ & & & $\bullet$\\
+DGPC & & $\bullet$ & $\bullet$ & $\bullet$ & & & $\bullet$\\
+Ministry & & $\bullet$ & & $\circ$ & & & $\bullet$\\\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\chapter{Non-functional requirements}
+% =====================================================================
+\begin{longtable}{@{}L{1.4cm}L{2.4cm}L{5.4cm}L{4.6cm}@{}}
+\toprule\textbf{ID} & \textbf{Category} & \textbf{Requirement} & \textbf{Target}\\\midrule\endhead
+NFR-1 & Performance & Full report round trip without RAG & $<3$~s\\
+NFR-2 & Performance & ONNX inference on CPU & $<250$~ms\\
+NFR-3 & Performance & Cold-start first call & $<4$~s\\
+NFR-4 & Scalability & Auto-scaling & 0 $\rightarrow$ 80 instances\\
+NFR-5 & Cost & Monthly cost & 0~TND\\
+NFR-6 & Security & HTTPS, input validation, rate limiting on every route & 100\,\% of routes\\
+NFR-7 & Privacy & No personal data; faces/plates blurred before storage & Before persistence (Law 2004-63)\\
+NFR-8 & Portability & Container-based, no vendor lock-in & One Dockerfile per service\\
+NFR-9 & Observability & Health endpoints, structured logs & Always on\\
+NFR-10 & Accessibility & Contrast, large touch targets & WCAG 2.1 AA\\
+NFR-11 & Localisation & FR / EN, Arabic-ready (externalised strings) & All UI text\\
+NFR-12 & Energy & Driving mode without overheating & $\geq20$~min\\
+NFR-13 & Consistency & Timestamps in UTC ISO 8601 with trailing \texttt{Z}; \texttt{lat} then \texttt{lon} (WGS84) & All services\\
+NFR-14 & Maintainability & Automated tests on every push & CI green before merge\\\bottomrule
+\end{longtable}
+
+% =====================================================================
+\chapter{System architecture}
+% =====================================================================
+\section{Architectural overview}
+RoadScan consists of \textbf{one mobile client and three logical services} behind a core API. The vision model
+is called \emph{in-process} as a Python function. The RAG agent is a \textbf{separate HTTP service}, because its
+dependencies (PyTorch, ChromaDB, sentence-transformers) are too heavy to share the Core API image. The whole
+stack runs on free tiers and scales to zero.
+
+\figwide{architecture}{Architecture overview}{fig:arch}
+\figimg{component}{Component diagram: provided and required interfaces}{fig:component}
+\figimg{deployment}{Deployment diagram}{fig:deployment}
+
+Local development uses \texttt{docker-compose.yml} with three services (\texttt{db} = PostGIS~16, \texttt{api},
+\texttt{rag-service}) and persistent volumes for the database and the Chroma store.
+
+\textbf{Decision AD-1.} Earlier versions packaged all services in one container. The repository ships two
+Dockerfiles (Core API + vision, and RAG) to keep PyTorch/Chroma out of the API image and its cold start.
+
+% =====================================================================
+\chapter{Dynamic behaviour}
+% =====================================================================
+\figimg{seq_report}{Sequence diagram: submitting a report (F1, F2, F3)}{fig:seqreport}
+\figimg{activity_processing}{Activity diagram: report processing on the server}{fig:actproc}
+\figimg{state_lifecycle}{State machine: report lifecycle}{fig:state}
+\figimg{seq_rag}{Sequence diagram: RAG work-sheet generation (internal)}{fig:seqrag}
+\figimg{seq_tracking}{Sequence diagram: citizen tracks a report (F5)}{fig:seqtrack}
+\figimg{activity_driving}{Activity diagram: driving mode (F6)}{fig:actdrive}
+
+% =====================================================================
+\chapter{Data model}
+% =====================================================================
+\figimg{er}{Entity--relationship diagram}{fig:er}
+\texttt{REPORTS} is implemented in \texttt{backend/app/db/schema.sql} with a GiST index on the geography point
+(5~m search) and indexes on \texttt{status} and \texttt{cluster\_id}. \texttt{REPORT\_EVENTS} is planned for the
+audit trail (F4). Rule chunks live in the Chroma collection \texttt{road\_rules\_v1}, not in PostgreSQL.
+\texttt{sheet\_text} and \texttt{target\_office} are stored on \texttt{reports} (AD-3).
+
+\figimg{class_backend}{Class diagram: backend domain}{fig:classback}
+\figimg{class_mobile}{Class diagram: mobile application}{fig:classmobile}
+
+% =====================================================================
+\chapter{Interface contracts}
+% =====================================================================
+These contracts are \textbf{frozen} (Sprint~1) and shared by every work package: fields may be added, never
+renamed or removed without unanimous agreement.
+
+\section{Report object}
+\begin{longtable}{@{}L{3.6cm}L{3.8cm}L{6.6cm}@{}}
+\toprule\textbf{Field} & \textbf{Type} & \textbf{Notes}\\\midrule\endhead
+\texttt{report\_id} & UUID & Server-assigned only\\
+\texttt{device\_report\_id} & string (UUID) & Generated on the phone, never reused\\
+\texttt{photo\_url} & string & Set by API; raw photo deleted after sheet creation\\
+\texttt{lat}, \texttt{lon} & float & WGS84; latitude first\\
+\texttt{gps\_accuracy\_m} & float & Used by deduplication\\
+\texttt{speed\_kmh} & float & 0 if stationary\\
+\texttt{direction\_deg} & float 0--360 & Compass heading\\
+\texttt{captured\_at} & ISO 8601 UTC, \texttt{Z} & No local time zones\\
+\texttt{source} & enum & \texttt{manual} $|$ \texttt{driving\_mode}\\
+\texttt{score} & int 1--5 or null & From vision\\
+\texttt{confidence} & float 0--1 or null & From vision\\
+\texttt{status} & enum & \texttt{new}, \texttt{confirmed}, \texttt{sheet\_sent}, \texttt{fixed}\\
+\texttt{cluster\_id} & UUID or null & Shared among merged duplicates\\
+\texttt{created\_at}, \texttt{updated\_at} & ISO 8601 UTC & Server-set\\
+\texttt{sheet\_text}, \texttt{target\_office} & string or null & Additive: populated by RAG\\\bottomrule
+\end{longtable}
+
+\section{REST API}
+\begin{longtable}{@{}L{4.8cm}L{5.4cm}L{2.6cm}L{1.6cm}@{}}
+\toprule\textbf{Route} & \textbf{Purpose} & \textbf{Errors} & \textbf{Status}\\\midrule\endhead
+\texttt{POST /reports} & Create a report (multipart) & 422 & \sDone\\
+\texttt{GET /reports/\{device\_report\_id\}} & Status of the phone's own report & 404 & \sDone\\
+\texttt{PATCH /reports/\{report\_id\}} & Move status forward & 404, 409 & \sDone\\
+\texttt{GET /map?bbox=} & Points in viewport & 422 & \sDone\\
+\texttt{GET /map?...\&sev=\&state=} & Filtered map & & \sPlan\\
+\texttt{GET /authorities/\{id\}/queue} & Sorted list for one office & & \sPlan\\
+\texttt{GET /export?format=} & CSV / GeoJSON download & & \sPlan\\
+\texttt{GET /health}, \texttt{GET /docs} & Liveness, OpenAPI docs & & \sDone\\\bottomrule
+\end{longtable}
+
+\section{Vision and RAG interfaces}
+\begin{lstlisting}
+infer(image: bytes) -> {score: 1-5, confidence: 0-1,
+                        boxes: [{x, y, w, h, class: "pothole"}], inference_ms}
+
+POST /generate   (RAG service)
+  request : {lat, lon, score (1-5), road_type?}
+  response: {sheet_text, rule_citations: [{rule_id, source, excerpt}],
+             target_office: "Municipality" | "DGPC" | "Ministry of Equipment",
+             road_type, generated_at (ISO-8601 UTC), generation_ms}
+\end{lstlisting}
+
+\section{Shared configuration}
+\begin{longtable}{@{}L{5.6cm}L{1.6cm}L{6.8cm}@{}}
+\toprule\textbf{Variable} & \textbf{Owner} & \textbf{Meaning}\\\midrule\endhead
+\texttt{DATABASE\_URL} & WP3 & PostgreSQL / PostGIS connection\\
+\texttt{MODEL\_PATH} & WP1 & Path to \texttt{pothole\_model.onnx}\\
+\texttt{CHROMA\_DB\_PATH} & WP2 & Chroma persistence directory\\
+\texttt{HF\_API\_TOKEN}, \texttt{HF\_MODEL\_PRIMARY}, \texttt{HF\_MODEL\_BACKUP} & WP2 & LLM access and model choice\\
+\texttt{RAG\_SERVICE\_URL}, \texttt{RAG\_TIMEOUT\_S} & WP3 & Where and how long the API waits for RAG\\
+\texttt{MAX\_DEDUP\_DISTANCE\_M} & WP3 & Deduplication radius (5)\\
+\texttt{SCORE\_THRESHOLD\_FOR\_SHEET} & WP3/WP2 & Minimum score for a sheet (3)\\
+\texttt{PORT}, \texttt{CLOUD\_RUN\_SERVICE\_NAME} & WP-T & Deployment\\\bottomrule
+\end{longtable}
+
+% =====================================================================
+\chapter{Work packages and repository structure}
+% =====================================================================
+\section{Work packages}
+\begin{longtable}{@{}L{1.4cm}L{4.2cm}L{2.8cm}L{2.8cm}L{2.8cm}@{}}
+\toprule\textbf{WP} & \textbf{Scope} & \textbf{Owner} & \textbf{Co-owner} & \textbf{Deliverable}\\\midrule\endhead
+WP1 & AI detection model, severity rule & T.~Oueslati & J.~Chibani & ONNX model, inference, report\\
+WP2 & RAG agent and work sheet & A.~Jeddou & J.~Belhaj Mohamed & \texttt{rag-service/}\\
+WP3 & Core API, geospatial backend & J.~Chibani & T.~Oueslati & FastAPI, schema, tests\\
+WP4 & Mobile app (citizen, driving) & J.~Belhaj Mohamed & A.~Jeddou & Flutter app, APK\\
+WP-T & Docker, CI/CD, contracts & All & --- & Dockerfiles, CI, docs\\\bottomrule
+\end{longtable}
+
+\section{Repository layout}
+\begin{lstlisting}
+RoadScan/
+|-- README.md, Dockerfile, docker-compose.yml, .env.example
+|-- .github/workflows/ci.yml          CI: backend | rag-service | mobile
+|-- docs/                             Cahier_de_charges.*, Sprint1_Action_Plan.md
+|-- mobile/                           WP4 - Flutter
+|   |-- lib/app/                      roadscan_app.dart, brand.dart
+|   |-- lib/models/                   report_draft, queued_report, report_result
+|   |-- lib/screens/                  splash, root_shell, home, camera_capture,
+|   |                                 report_preview, report_result, map, reports
+|   |-- lib/services/                 api_client, location_service,
+|   |                                 offline_queue_repository, mock_reports
+|   |-- lib/utils/, test/, assets/fonts/, design/
+|-- backend/app/                      WP3 - Core API (+ WP1 runtime)
+|   |-- main.py, config.py, db.py, db_models.py, schemas.py
+|   |-- status.py, dedup.py, vision_client.py, rag_client.py
+|   |-- routers/ (reports.py, map.py), db/schema.sql, tests/
+|-- ml-training/                      WP1 - training and export
+|   |-- train.py, convert_to_yolo.py, export_onnx.py, inference.py
+|   |-- severity_scoring.py, timing_test.py, models/pothole_model.onnx
+|-- rag-service/                      WP2 - RAG microservice
+    |-- app/ (main, pipeline, road_type, retrieval, embeddings,
+    |         generation, citation_guard, config, schemas)
+    |-- ingestion/ (chunker, build_index)
+    |-- rules_real/, rules_placeholder/, tests/, Dockerfile
+\end{lstlisting}
+
+\figimg{package}{Package diagram: module dependencies}{fig:package}
+
+\section{Handoffs between work packages}
+\begin{longtable}{@{}L{3cm}L{5.4cm}L{5.6cm}@{}}
+\toprule\textbf{From $\rightarrow$ to} & \textbf{Interface} & \textbf{Frozen shape}\\\midrule\endhead
+WP1 $\rightarrow$ WP3 & \texttt{run\_inference(image)} & Vision interface above\\
+WP2 $\rightarrow$ WP3 & \texttt{POST /generate} & RAG interface above\\
+WP3 $\rightarrow$ WP4 & REST routes & REST API table\\
+WP-T $\rightarrow$ all & Container and configuration list & Shared configuration table\\\bottomrule
+\end{longtable}
+
+% =====================================================================
+\chapter{Technology choices}
+% =====================================================================
+Each decision states the constraint, the candidates (\checkmark\ satisfies, $\times$ does not) and the selection.
+\newcommand{\yes}{\checkmark}
+\newcommand{\no}{$\times$}
+
+\section{Selection tables}
+\subsection*{Mobile framework --- one month, small team, Android + iPhone}
+\begin{tabular}{@{}lccc@{}}\toprule Criterion & \textbf{Flutter} & React Native & Native $\times2$\\\midrule
+Single codebase & \yes & \yes & \no\\ Free, good maps & \yes & \no & \no\\ Fast to learn & \yes & \no & \no\\\bottomrule\end{tabular}
+
+Selected: \textbf{Flutter} (\texttt{camera}, \texttt{geolocator}, \texttt{flutter\_compass}, \texttt{flutter\_map},
+\texttt{http}, \texttt{shared\_preferences}, \texttt{path\_provider}, \texttt{uuid}).
+
+\subsection*{Map base layer --- 0 TND, covers Tunisia}
+\begin{tabular}{@{}lccc@{}}\toprule Criterion & \textbf{OpenStreetMap} & Google Maps & Mapbox\\\midrule
+No API key & \yes & \no & \no\\ No usage cap & \yes & \no & \no\\ Tunisia coverage & \yes & \yes & \yes\\\bottomrule\end{tabular}
+
+\subsection*{Detection model --- CPU only, $<250$~ms}
+\begin{tabular}{@{}lccc@{}}\toprule Criterion & \textbf{YOLOv8n} & YOLOv8s/m & Faster R-CNN\\\midrule
+Fast on CPU & \yes & \no & \no\\ Small file & \yes & \no & \no\\ Sufficient accuracy & \yes & \yes & \yes\\\bottomrule\end{tabular}
+
+Exported to \textbf{ONNX (opset 12)} and run with ONNX Runtime: light, portable, no PyTorch in production.
+
+\subsection*{Vector store --- 0 TND, 15--30 pages of rules}
+\begin{tabular}{@{}lccc@{}}\toprule Criterion & \textbf{Chroma} & Pinecone & Weaviate\\\midrule
+Free, no extra account & \yes & \no & \no\\ Runs beside the service & \yes & \no & \no\\ Fast at this size & \yes & \yes & \yes\\\bottomrule\end{tabular}
+
+\subsection*{Embeddings --- French text, 0 TND}
+\begin{tabular}{@{}lccc@{}}\toprule Criterion & \textbf{SentenceTransformers} & OpenAI & Cohere\\\midrule
+Free, local & \yes & \no & \no\\ Handles French & \yes & \yes & \yes\\ No per-request cost & \yes & \no & \no\\\bottomrule\end{tabular}
+
+Selected: \texttt{paraphrase-multilingual-MiniLM-L12-v2}.
+
+\subsection*{Sheet-writing LLM --- 0 TND, no GPU to host}
+\begin{tabular}{@{}lccc@{}}\toprule Criterion & \textbf{Llama 3.1 / Qwen 2.5} & GPT-4o & Claude\\\midrule
+Free to call & \yes & \no & \no\\ Open weights & \yes & \no & \no\\ No monthly bill & \yes & \no & \no\\\bottomrule\end{tabular}
+
+Selected: Llama-3.1-8B-Instruct (primary, measured 4.5--7.6~s), Qwen2.5-72B-Instruct (backup). Qwen2.5-7B and
+Llama-3.2-3B were unavailable through the enabled providers; availability must be re-verified before each demo.
+
+\subsection*{API framework and database}
+\begin{tabular}{@{}lccc@{}}\toprule Criterion & \textbf{FastAPI} & Flask & Django REST\\\midrule
+Async concurrency & \yes & \no & \no\\ Auto API docs & \yes & \no & \yes\\ Automatic validation & \yes & \no & \yes\\\bottomrule\end{tabular}
+\medskip
+
+\begin{tabular}{@{}lccc@{}}\toprule Criterion & \textbf{PostgreSQL + PostGIS} & MongoDB & Firebase\\\midrule
+Native geospatial queries & \yes & \no & \no\\ Large free tier & \yes & \yes & \yes\\ Standard SQL & \yes & \no & \no\\\bottomrule\end{tabular}
+
+\subsection*{Compute and CI/CD}
+\begin{tabular}{@{}lccc@{}}\toprule Criterion & \textbf{Cloud Run} & VM & Kubernetes\\\midrule
+Free when idle & \yes & \no & \no\\ No server to manage & \yes & \no & \no\\ Auto-scaling & \yes & \no & \yes\\\bottomrule\end{tabular}
+\medskip
+
+\begin{tabular}{@{}lccc@{}}\toprule Criterion & \textbf{GitHub Actions} & Jenkins & GitLab CI (self-host)\\\midrule
+Free minutes & \yes & \no & \no\\ Native to GitHub & \yes & \no & \no\\ No server to maintain & \yes & \no & \no\\\bottomrule\end{tabular}
+
+\subsection*{Service split --- keep the API image light}
+\begin{tabular}{@{}lcc@{}}\toprule Criterion & \textbf{Separate RAG service} & RAG in API process\\\midrule
+API image without torch/chromadb & \yes & \no\\ Fast API cold start & \yes & \no\\ Single deploy unit & \no & \yes\\\bottomrule\end{tabular}
+
+\section{Free-tier budget check (demo month)}
+\begin{longtable}{@{}L{4.6cm}L{3.4cm}L{3.2cm}L{2.8cm}@{}}
+\toprule\textbf{Service} & \textbf{Free limit / month} & \textbf{Expected use} & \textbf{Margin}\\\midrule\endhead
+Cloud Run --- requests & 2{,}000{,}000 & $\sim$15{,}000 & $>99\,\%$\\
+Cloud Run --- compute & 180{,}000 vCPU$\cdot$s & $\sim$4{,}500 & $\sim97\,\%$\\
+Supabase --- storage & 500~MB & $<50$~MB & $>90\,\%$\\
+Hugging Face API & shared limit & $\sim$500 sheets & fallback\\
+GitHub Actions & 2{,}000~min & $\sim$200~min & $\sim90\,\%$\\\bottomrule
+\end{longtable}
+
+% =====================================================================
+\chapter{Data, privacy and legal compliance}
+% =====================================================================
+\section{Training data (WP1)}
+Free datasets (Roboflow, Kaggle) plus team photos and driving clips from Tunisia; target 2{,}000+ images
+(Sprint~1: $\geq400$ labelled), split 70/15/15 \textbf{by geographic area}. A single label, \texttt{pothole};
+severity is \emph{derived} from the bounding box. Augmentation: blur, rain, shadow, brightness. Training:
+YOLOv8n from pretrained weights, final run targeted at 60 epochs, \texttt{imgsz=640} (Sprint~1 pipeline verified with one epoch).
+
+\section{Rule corpus (WP2)}
+Law 86-17 (road classification), Law 2018-29 (Code des Collectivit\'es Locales) and technical references (to be
+completed). Chunking is semantic: one chunk per article or clause; chunks above 300 words are split into
+$\sim$200-word parts with $\sim$35-word overlap, capped at 1{,}200 characters. Every sheet stores the chunks it
+used, so faults are fixed in the rules, not in the model.
+
+\section{Personal data}
+\begin{itemize}
+\item No name, phone number or account identifier is collected; a report is tied only to the phone's \texttt{device\_report\_id}.
+\item Faces and licence plates are blurred before a photo is persisted (\sPlan).
+\item Compliance with \textbf{Law 2004-63}; location data describes the road, not a person's trips.
+\item Raw photos are deleted once the sheet is produced (\sPlan).
+\item Driving mode discards empty frames on the device and never stores whole trips.
+\end{itemize}
+
+% =====================================================================
+\chapter{Quality assurance, CI/CD and deployment}
+% =====================================================================
+\section{Branching workflow}
+\begin{itemize}
+\item \texttt{main} (demo-ready) and \texttt{dev} (integration) are protected; no direct push.
+\item Feature branches \texttt{feature/...}, \texttt{fix/...}, \texttt{chore/...} are created from \texttt{dev}.
+\item Pull requests target \texttt{dev}, need at least one review and reference the issue (\texttt{Closes \#n}).
+\item CI must be green before merge; \texttt{dev} merges into \texttt{main} only at the end of a sprint.
+\end{itemize}
+
+\figimg{ci_pipeline}{Continuous-integration pipeline}{fig:ci}
+
+\section{Test strategy}
+\begin{longtable}{@{}L{2.4cm}L{6.2cm}L{3.6cm}L{1.8cm}@{}}
+\toprule\textbf{Level} & \textbf{Scope} & \textbf{Tooling} & \textbf{Status}\\\midrule\endhead
+Unit & Status transitions, bbox parsing, dedup, citation guard, ISO 8601 helper, queue model & pytest, flutter\_test & \sDone\\
+Integration & API $\leftrightarrow$ PostGIS $\leftrightarrow$ mocked vision/RAG & pytest-asyncio, httpx & \sDone\\
+Widget & Root navigation shell & flutter\_test & \sDone\\
+Model & mAP@50 and latency & ultralytics, ONNX Runtime & \sPart\\
+End-to-end & Phone $\rightarrow$ API $\rightarrow$ map $\rightarrow$ sheet & Manual on device & \sPlan\\
+Load & Map with 5{,}000+ points & Synthetic data & \sPlan\\\bottomrule
+\end{longtable}
+
+\section{Deployment}
+\begin{enumerate}
+\item \textbf{API image} --- \texttt{Dockerfile}, two-stage, Python~3.12-slim; bundles \texttt{backend/app}, the inference module and the ONNX model; listens on \texttt{\$PORT}.
+\item \textbf{RAG image} --- \texttt{rag-service/Dockerfile}, Chroma store on a persistent volume.
+\item \textbf{Keep-alive} --- an external free pinger calls \texttt{GET /health} every 10 minutes before demos.
+\item \textbf{Observability} --- \texttt{/health} on both services, request logs, RAG generation time in each response.
+\end{enumerate}
+
+% =====================================================================
+\chapter{Project plan}
+% =====================================================================
+\figimg{gantt}{Sprint schedule (indicative dates)}{fig:gantt}
+
+\begin{longtable}{@{}L{1.4cm}L{5cm}L{7.6cm}@{}}
+\toprule\textbf{Sprint} & \textbf{Goal} & \textbf{Exit check}\\\midrule\endhead
+1 & Runnable skeleton per WP; contracts frozen & Everything runs on mock data; Dockerfile builds; CI green\\
+2 & Real pipeline: photo $\rightarrow$ score $\rightarrow$ dedup $\rightarrow$ sheet & A real photo yields a located, scored report; a confirmed serious pothole yields a sheet; mAP@50 $\geq0.6$\\
+3 & Complete mobile flow, F4--F6 & Full flow on a phone; mAP@50 $\geq0.75$\\
+4 & Hardening and demo & Every target of Chapter~2 measured; live demo on Cloud Run\\\bottomrule
+\end{longtable}
+
+\section{Responsibility matrix (RACI)}
+\begin{tabular}{@{}lcccc@{}}\toprule Activity & Tharaa & Aymen & Jasseur & Jed\\\midrule
+Dataset and training (WP1) & R/A & C & R & I\\
+Severity rule & R/A & I & C & I\\
+Rule corpus and RAG (WP2) & I & R/A & C & R\\
+Core API and PostGIS (WP3) & R & I & R/A & I\\
+Mobile app (WP4) & I & R & I & R/A\\
+Docker, CI, contracts (WP-T) & R & R & R & R\\\bottomrule\end{tabular}
+
+R = responsible, A = accountable, C = consulted, I = informed.
+
+% =====================================================================
+\chapter{Risk analysis}
+% =====================================================================
+\begin{longtable}{@{}L{0.9cm}L{4cm}L{1.2cm}L{1.2cm}L{6.4cm}@{}}
+\toprule\textbf{\#} & \textbf{Risk} & \textbf{Prob.} & \textbf{Impact} & \textbf{Mitigation}\\\midrule\endhead
+R1 & Not enough photos, low accuracy & Med & High & Collect from day 1, augment, pretrained weights\\
+R2 & Hugging Face limits, latency or model removal & High & Med & Two models plus template; verify before demo; never block report creation\\
+R3 & Cold start & High & Low & Keep-alive ping, loading indicator\\
+R4 & Inaccurate urban GPS & High & Med & Use \texttt{gps\_accuracy\_m}, require 2 nearby reports, use heading\\
+R5 & Blurry frames in driving mode & High & Med & Low frame rate, 3 consecutive frames, 80~km/h cap, blurred training photos\\
+R6 & Privacy risk from continuous capture & Med & Med & Discard empty frames on device, blur faces/plates, no trip storage\\
+R7 & Incomplete rule corpus & Med & Med & Small explicit coverage; replace placeholders; sheets state when rules are insufficient\\
+R8 & Free storage exhausted & Low & Med & Delete raw photos after sheet creation\\
+R9 & Scope creep & High & Med & Section ``Out of scope'' is the boundary; backlog for new ideas\\
+R10 & False positives (puddle, shadow) & Med & Med & Confidence threshold, 2-report confirmation, negative training images\\
+R11 & Contract drift between WPs & Med & High & Frozen contracts, shared \texttt{.env.example}, tests on exact field names\\
+R12 & Synchronous RAG call slows \texttt{POST /reports} & Med & Med & Background task; 15~s timeout with graceful fallback\\\bottomrule
+\end{longtable}
+
+\figimg{risk_matrix}{Risk matrix (probability $\times$ impact)}{fig:risk}
+
+% =====================================================================
+\chapter{Acceptance criteria}
+% =====================================================================
+The MVP is accepted when all items below are demonstrated live to the team and supervisors.
+\begin{longtable}{@{}L{0.8cm}L{9cm}L{4.2cm}@{}}
+\toprule\textbf{\#} & \textbf{Criterion} & \textbf{Verification}\\\midrule\endhead
+1 & A real photo becomes a coloured dot on the map in $<3$~s (excluding sheet) & Stopwatch on device\\
+2 & A short drive with the phone on the windscreen produces at least one correct automatic report & Field test\\
+3 & mAP@50 $\geq0.75$ on the test set, with a written report & Model report\\
+4 & A confirmed serious pothole produces a sheet citing a real rule and a non-empty target office & Inspect sheet and citations\\
+5 & The map shows, filters and deduplicates; deduplication runs in the database & Two reports $<5$~m apart\\
+6 & Status flow \texttt{new} $\rightarrow$ \texttt{fixed} works and is logged & \texttt{PATCH} sequence incl.\ a rejected transition\\
+7 & Every push to \texttt{main} deploys to Cloud Run automatically & Actions run + live URL\\
+8 & Monthly infrastructure cost is 0~TND & Billing consoles\\
+9 & Repository contains code for all WPs, Dockerfiles, API docs, README, model report and this checklist & Repository review\\\bottomrule
+\end{longtable}
+
+\section{Implementation snapshot (end of Sprint 1)}
+\begin{longtable}{@{}L{2.4cm}L{6.2cm}L{5.4cm}@{}}
+\toprule\textbf{Area} & \textbf{Done} & \textbf{Remaining}\\\midrule\endhead
+WP1 Vision & Training/export pipeline, ONNX model, inference, severity rule, timing test & Full training to reach 0.75 mAP, model report\\
+WP2 RAG & Pipeline, retrieval, citation guard, fallback, real-law seeds, tests & Complete corpus, background integration\\
+WP3 API & Reports/map/status routes, dedup, schema, tests, Dockerfile & \texttt{report\_events}, queue/export routes, map filters, rate limiting, blur/deletion\\
+WP4 Mobile & Screens, GPS/heading, queue model and repository, tests & Queue flushing, real API wiring, notifications, clustering, driving mode\\
+WP-T & Compose stack, CI on 3 jobs, \texttt{.env.example}, contracts & Cloud Run deploy workflow, keep-alive\\\bottomrule
+\end{longtable}
+
+% =====================================================================
+\appendix
+\chapter{Appendices}
+% =====================================================================
+\section{Glossary}
+\begin{longtable}{@{}L{3.4cm}L{10.6cm}@{}}
+\toprule\textbf{Term} & \textbf{Definition}\\\midrule\endhead
+Baladiya & Tunisian municipality\\
+DGPC & Direction G\'en\'erale des Ponts et Chauss\'ees\\
+RAG & Retrieval-Augmented Generation: an LLM restricted to retrieved real text\\
+mAP@50 & Mean average precision at IoU 0.5, a detection quality metric\\
+ONNX & Open model exchange format for fast CPU inference\\
+PostGIS & Geospatial extension of PostgreSQL\\
+Cluster & Set of reports within 5~m considered the same pothole\\
+Scale-to-zero & Service stops and costs nothing while idle\\
+Cold start & Delay of the first request after idle\\
+Dashcam mode & Phone on the windscreen detecting potholes while driving\\\bottomrule
+\end{longtable}
+
+\section{Road types}
+\begin{longtable}{@{}L{1.4cm}L{3.8cm}L{4.4cm}L{4.4cm}@{}}
+\toprule\textbf{Code} & \textbf{Type} & \textbf{Manager} & \textbf{Sheet recipient}\\\midrule\endhead
+RN & National road & DGPC / Ministry of Equipment & Regional office\\
+RR & Regional road & DGPC / regional office & Regional office\\
+RL & Classified local road & Regional office or city & Regional office or city\\
+--- & Unclassified city street & Baladiya & Municipal technical service\\
+A & Motorway & Tunisie Autoroutes & Out of MVP scope\\\bottomrule
+\end{longtable}
+The RAG service internally uses the categories \texttt{urbain\_principal}, \texttt{urbain\_secondaire},
+\texttt{rural}, \texttt{autoroute}, \texttt{piste}, mapped to the offices Municipality, DGPC and Ministry of Equipment.
+
+\section{Compliance matrix: specification vs.\ repository}
+\begin{longtable}{@{}L{6.4cm}L{5.8cm}L{1.8cm}@{}}
+\toprule\textbf{Specification element} & \textbf{Repository evidence} & \textbf{Status}\\\midrule\endhead
+Four components in separate folders & \texttt{mobile/}, \texttt{backend/}, \texttt{ml-training/}, \texttt{rag-service/} & \sDone\\
+Frozen enums (sources, four statuses) & \texttt{schemas.py}, \texttt{status.py}, \texttt{schema.sql} & \sDone\\
+5~m PostGIS deduplication & \texttt{dedup.py}, GiST index & \sDone\\
+ONNX YOLOv8n, opset 12 & \texttt{export\_onnx.py}, \texttt{pothole\_model.onnx} & \sDone\\
+RAG: Chroma, top-5, citation guard & \texttt{rag-service/app/*} & \sDone\\
+Two Dockerfiles + compose & \texttt{Dockerfile}, \texttt{rag-service/Dockerfile}, \texttt{docker-compose.yml} & \sDone\\
+CI on backend, RAG and mobile & \texttt{.github/workflows/ci.yml} & \sDone\\
+Cloud Run auto-deploy & --- & \sPlan\\
+\texttt{report\_events}, queue and export routes, map filters & --- & \sPlan\\
+Face/plate blur, photo deletion, rate limiting & --- & \sPlan\\
+Driving mode, notifications, marker clustering & --- & \sPlan\\\bottomrule
+\end{longtable}
+
+\section{Architecture decision records}
+\begin{longtable}{@{}L{1.3cm}L{5.4cm}L{3.4cm}L{3.9cm}@{}}
+\toprule\textbf{ID} & \textbf{Decision} & \textbf{Alternative} & \textbf{Consequence}\\\midrule\endhead
+AD-1 & RAG is a separate HTTP service; vision is in-process & One container & Light API image; two deployables\\
+AD-2 & \texttt{source} is \texttt{manual} / \texttt{driving\_mode} & \texttt{citizen\_photo} / \texttt{dashcam\_frame} & Follows the frozen contract\\
+AD-3 & \texttt{sheet\_text}, \texttt{target\_office} on \texttt{reports} & Separate \texttt{sheets} table & Simpler MVP\\
+AD-4 & Severity from relative box area & Depth in mm & Depth not measurable from 2-D photo\\
+AD-5 & Per-article chunking, 1{,}200-char cap & Fixed 400-char windows & Keeps legal clauses intact\\
+AD-6 & Offline queue in \texttt{shared\_preferences} & \texttt{hive} & Fewer dependencies\\
+AD-7 & Llama-3.1-8B primary LLM & Qwen2.5-72B primary & Meets the time budget\\
+AD-8 & Driving-mode frame rate fixed after Sprint~3 test (target 1~fps) & 12~fps & Resolves earlier inconsistency\\\bottomrule
+\end{longtable}
+
+\section{Open points}
+\begin{longtable}{@{}L{1.4cm}L{7.6cm}L{2.4cm}L{2.2cm}@{}}
+\toprule\textbf{\#} & \textbf{Question} & \textbf{Owner} & \textbf{Due}\\\midrule\endhead
+OP-1 & Driving mode: on-device detection or server-side per frame? & WP1 / WP4 & Sprint 3\\
+OP-2 & Retry mechanism when RAG fails & WP3 & Sprint 2\\
+OP-3 & Replace placeholder rules by validated texts & WP2 & Sprint 2\\
+OP-4 & Formula and traffic source for ``urgency $\times$ traffic $\times$ age'' & WP3 & Sprint 3\\\bottomrule
+\end{longtable}
+
+\vfill
+\begin{center}\small\itshape RoadScan --- Pothole Detection \& Management System --- MVP Tunisia\\
+A.~Jeddou, T.~Oueslati, J.~Chibani, J.~Belhaj Mohamed --- September 2026\end{center}
+\end{document}

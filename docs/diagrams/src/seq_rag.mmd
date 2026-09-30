@@ -1,0 +1,37 @@
+sequenceDiagram
+    autonumber
+    participant API as Core API (rag_client)
+    participant M as RAG main (/generate)
+    participant RT as road_type resolver
+    participant RE as retrieval
+    participant C as Chroma
+    participant G as generation
+    participant H as Hugging Face
+    participant CG as citation_guard
+
+    API->>M: {lat, lon, score, road_type?}
+    M->>RT: resolve road type
+    RT-->>M: road_type + target_office
+    M->>RE: query(road_type, score)
+    RE->>C: similarity search, k = 5
+    C-->>RE: chunks + scores
+    RE-->>M: chunks ≥ MIN_SIMILARITY
+    alt No relevant chunk
+        M-->>API: "not enough rules" fallback sheet
+    else Chunks found
+        M->>G: build prompt (cite rule_id mandatory)
+        G->>H: primary model Llama 3.1 8B
+        alt timeout / error
+            G->>H: backup model Qwen 2.5 72B
+        end
+        H-->>G: draft text
+        G->>CG: validate citations ⊆ retrieved ids
+        alt invalid
+            CG-->>G: reject
+            G-->>M: deterministic template sheet
+        else valid
+            CG-->>G: OK
+            G-->>M: sheet_text + rule_citations
+        end
+        M-->>API: GenerateResponse
+    end

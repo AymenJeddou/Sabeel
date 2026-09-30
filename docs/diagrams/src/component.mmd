@@ -1,0 +1,15 @@
+flowchart LR
+    APP["«component»<br/>Mobile App"]
+    CORE["«component»<br/>Core API"]
+    VIS["«component»<br/>Vision module"]
+    RAGS["«component»<br/>RAG service"]
+    PG["«component»<br/>PostgreSQL + PostGIS"]
+    LLM["«external»<br/>Hugging Face LLM"]
+    TILES["«external»<br/>OSM tile server"]
+
+    APP -- "REST: POST /reports,<br/>GET /map, GET /reports/{id}" --> CORE
+    CORE -- "infer(image) → score, confidence, boxes<br/>(in-process call)" --> VIS
+    CORE -- "generate(lat, lon, score, road_type)<br/>(HTTP POST /generate)" --> RAGS
+    CORE -- "SQL / PostGIS (asyncpg)" --> PG
+    RAGS -- "chat completion" --> LLM
+    APP -- "HTTP tiles" --> TILES
