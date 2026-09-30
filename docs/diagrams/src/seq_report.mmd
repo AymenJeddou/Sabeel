@@ -1,0 +1,39 @@
+sequenceDiagram
+    autonumber
+    actor U as Citizen
+    participant A as Mobile app
+    participant Q as Offline queue
+    participant API as Core API
+    participant V as Vision (ONNX)
+    participant DB as PostgreSQL/PostGIS
+    participant R as RAG service
+    participant L as LLM (Hugging Face)
+
+    U->>A: Take photo
+    A->>A: Read GPS, speed, heading<br/>generate device_report_id
+    alt Network available
+        A->>API: POST /reports (multipart)
+    else Offline
+        A->>Q: Enqueue report
+        Q-->>A: Stored locally
+        Note over Q,API: Delivered on reconnection
+        Q->>API: POST /reports (retry)
+    end
+    API->>API: Save photo, assign report_id
+    API->>V: infer(image)
+    V-->>API: score, confidence
+    API->>DB: find_or_join_cluster(lat, lon, 5 m)
+    DB-->>API: cluster_id or none
+    alt Cluster found (confirmed)
+        opt score ≥ 3
+            API->>R: POST /generate {lat, lon, score}
+            R->>R: Resolve road type, retrieve top-5 rules
+            R->>L: Prompt with rules
+            L-->>R: Draft sheet
+            R->>R: Citation guard (or fallback template)
+            R-->>API: sheet_text, citations, target_office
+        end
+    end
+    API->>DB: INSERT report (status new/confirmed/sheet_sent)
+    API-->>A: 201 {report_id, status, score, sheet_summary?}
+    A-->>U: Result screen

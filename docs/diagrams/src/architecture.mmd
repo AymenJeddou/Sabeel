@@ -1,0 +1,53 @@
+flowchart LR
+    subgraph Client["Mobile app — Flutter (WP4)"]
+        CAM["Camera capture"]
+        LOC["Location service<br/>GPS · speed · heading"]
+        QUEUE["Offline queue"]
+        MAPUI["Map screen<br/>flutter_map + OSM"]
+        LIST["My reports screen"]
+    end
+
+    subgraph API["Core API — FastAPI (WP3)"]
+        RR["/reports router"]
+        MR["/map router"]
+        DEDUP["Dedup service<br/>ST_DWithin ≤ 5 m"]
+        SM["Status state machine"]
+        VC["vision_client"]
+        RC["rag_client"]
+    end
+
+    subgraph Vision["Vision (WP1)"]
+        INF["inference.py<br/>ONNX Runtime CPU"]
+        SEV["severity_scoring.py"]
+        MODEL[("pothole_model.onnx")]
+    end
+
+    subgraph RAG["RAG service — FastAPI (WP2)"]
+        ROAD["Road-type resolver"]
+        RETR["Retriever top-5"]
+        GEN["LLM generation +<br/>fallback template"]
+        GUARD["Citation guard"]
+        CHROMA[("Chroma<br/>road_rules_v1")]
+    end
+
+    DB[(" Supabase / PostgreSQL<br/>+ PostGIS")]
+    HF["Hugging Face<br/>Inference API"]
+    OSM["OpenStreetMap tiles"]
+
+    CAM --> QUEUE
+    LOC --> QUEUE
+    QUEUE -->|"POST /reports (multipart)"| RR
+    MAPUI -->|"GET /map"| MR
+    LIST -->|"GET /reports/{device_report_id}"| RR
+    MAPUI --> OSM
+
+    RR --> VC --> INF
+    INF --> SEV
+    INF --- MODEL
+    RR --> DEDUP --> DB
+    RR --> SM
+    RR --> RC -->|"POST /generate (HTTP)"| ROAD
+    MR --> DB
+    ROAD --> RETR --- CHROMA
+    RETR --> GEN --> GUARD
+    GEN --> HF

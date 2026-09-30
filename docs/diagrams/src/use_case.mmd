@@ -1,0 +1,45 @@
+flowchart LR
+    %% Actors
+    citizen(["Citizen"])
+    driver(["Volunteer driver"])
+    muni(["Municipality officer"])
+    dgpc(["DGPC officer"])
+    min(["Ministry analyst"])
+
+    subgraph RoadScan["RoadScan system"]
+        direction TB
+        UC1(["Submit pothole report"])
+        UC2(["Run hands-free detection"])
+        UC3(["Track own report status"])
+        UC4(["View map & filters"])
+        UC5(["View priority list"])
+        UC6(["Update status"])
+        UC7(["Export CSV / GeoJSON"])
+        UC8(["View national dashboard"])
+        UC9(["Write work sheet (RAG)"])
+        UC10(["Detect & score pothole"])
+        UC11(["Merge duplicates (< 5 m)"])
+    end
+
+    citizen --- UC1
+    citizen --- UC3
+    citizen --- UC4
+    driver --- UC2
+    driver --- UC3
+    muni --- UC4
+    muni --- UC5
+    muni --- UC6
+    muni --- UC7
+    dgpc --- UC4
+    dgpc --- UC5
+    dgpc --- UC6
+    dgpc --- UC7
+    min --- UC8
+    min --- UC7
+
+    UC1 -. "«include»" .-> UC10
+    UC2 -. "«include»" .-> UC10
+    UC1 -. "«include»" .-> UC11
+    UC2 -. "«include»" .-> UC11
+    UC11 -. "«extend» confirmed ∧ score ≥ 3" .-> UC9
+    UC6 -. "«extend» confirmed ∧ score ≥ 3" .-> UC9
