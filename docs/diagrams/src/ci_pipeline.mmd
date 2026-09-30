@@ -1,0 +1,15 @@
+flowchart LR
+    push(["push / pull request"]) --> B & R & M
+
+    subgraph B["Job: backend"]
+        b1["Start PostGIS 16 service"] --> b2["Apply schema.sql"] --> b3["pip install"] --> b4["pytest backend/app/tests"]
+    end
+    subgraph R["Job: rag-service"]
+        r1["Install CPU-only torch"] --> r2["pip install requirements"] --> r3["pytest rag-service/tests"]
+    end
+    subgraph M["Job: mobile"]
+        m1["Setup Flutter stable"] --> m2["flutter pub get"] --> m3["flutter analyze"] --> m4["flutter test"]
+    end
+
+    b4 & r3 & m4 --> ok(["Merge allowed"])
+    ok -. "push to main (planned)" .-> deploy["Build image → Deploy to Cloud Run"]

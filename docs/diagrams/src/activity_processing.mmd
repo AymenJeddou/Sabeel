@@ -1,0 +1,20 @@
+flowchart TD
+    S([Report received]) --> P[Store photo]
+    P --> I{Vision inference OK?}
+    I -- No --> N["score = null<br/>confidence = null<br/>log error"]
+    I -- Yes --> SC["score 1–5, confidence"]
+    N --> D
+    SC --> D[Search neighbours ≤ 5 m<br/>PostGIS ST_DWithin]
+    D --> F{Neighbour found?}
+    F -- No --> NEW["status = new"]
+    F -- Yes --> CONF["status = confirmed<br/>join / create cluster_id"]
+    CONF --> T{score ≥ 3?}
+    T -- No --> SAVE
+    T -- Yes --> G[Call RAG generate]
+    G --> OK{Sheet returned?}
+    OK -- Yes --> SENT["status = sheet_sent<br/>store sheet_text, target_office"]
+    OK -- No --> KEEP["stay confirmed<br/>retry later"]
+    NEW --> SAVE[(Persist report)]
+    SENT --> SAVE
+    KEEP --> SAVE
+    SAVE --> E([Return 201])

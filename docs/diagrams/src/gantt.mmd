@@ -1,0 +1,27 @@
+gantt
+    title RoadScan - 4 sprints (indicative dates)
+    dateFormat  YYYY-MM-DD
+    axisFormat  %d %b
+    todayMarker off
+
+    section Sprint 1 - Foundations
+    Contracts frozen - Docker - CI           :done, s1a, 2026-09-14, 7d
+    WP1 pipeline + severity rule           :done, s1b, 2026-09-14, 7d
+    WP2 Chroma seeded, first sheet         :done, s1c, 2026-09-14, 7d
+    WP3 API skeleton + PostGIS schema      :done, s1d, 2026-09-14, 7d
+    WP4 app skeleton, GPS capture          :done, s1e, 2026-09-14, 7d
+
+    section Sprint 2 - Core build
+    API vision RAG integration         :s2a, 2026-09-22, 7d
+    Dedup + status workflow                :s2b, 2026-09-22, 7d
+    Model training on full dataset         :s2c, 2026-09-22, 7d
+
+    section Sprint 3 - Integration
+    App capture, queue, map               :s3a, 2026-09-29, 7d
+    Priority list, export, feedback loop   :s3b, 2026-09-29, 7d
+    Driving mode prototype                 :s3c, 2026-09-29, 7d
+
+    section Sprint 4 - Hardening
+    Deploy to Cloud Run                    :s4a, 2026-10-06, 4d
+    Privacy blur, photo deletion, rate limits :s4b, 2026-10-06, 4d
+    Measurements, final checklist, demo    :s4c, 2026-10-10, 3d

@@ -1,0 +1,32 @@
+flowchart TB
+    subgraph Phone["Android device (APK)"]
+        FL["Flutter app"]
+    end
+
+    subgraph GH["GitHub"]
+        REPO["Repository"]
+        GA["GitHub Actions<br/>CI: backend · rag-service · mobile"]
+    end
+
+    subgraph Cloud["Free-tier cloud"]
+        subgraph CR1["Cloud Run — API container (Dockerfile)"]
+            UV["uvicorn · backend.app.main"]
+            ONNX["ONNX model bundled<br/>ml-training/models"]
+        end
+        subgraph CR2["Cloud Run — RAG container (rag-service/Dockerfile)"]
+            UV2["uvicorn · rag-service.app.main"]
+            VOL[("Chroma persisted store")]
+        end
+        SB[("Supabase<br/>PostgreSQL + PostGIS")]
+    end
+
+    HFAPI["Hugging Face Inference Providers"]
+
+    FL -- "HTTPS" --> UV
+    UV -- "HTTP" --> UV2
+    UV -- "asyncpg" --> SB
+    UV2 --> HFAPI
+    REPO --> GA
+    GA -. "tests on push / PR" .-> REPO
+    GA -. "build & deploy on push to main (planned)" .-> CR1
+    GA -. "build & deploy (planned)" .-> CR2

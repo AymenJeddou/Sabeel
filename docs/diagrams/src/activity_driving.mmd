@@ -1,0 +1,14 @@
+flowchart TD
+    A([Start driving mode]) --> B[Read camera stream]
+    B --> C{Speed}
+    C -- "stopped or > 80 km/h" --> B
+    C -- "moving ≤ 80 km/h" --> D[Sample frame]
+    D --> E[Detect pothole]
+    E --> F{Detected?}
+    F -- No --> Z[Discard frame<br/>reset counter] --> B
+    F -- Yes --> G[counter + 1]
+    G --> H{3 consecutive?}
+    H -- No --> B
+    H -- Yes --> I["Build report<br/>source = driving_mode<br/>+ GPS, speed, heading"]
+    I --> J[POST /reports or queue offline]
+    J --> B
