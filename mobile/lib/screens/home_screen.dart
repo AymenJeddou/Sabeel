@@ -58,7 +58,7 @@ class HomeScreen extends StatelessWidget {
                       Expanded(
                         child: _StatCard(
                           value: stat('potholes_total'),
-                          label: 'Signalés à Tunis',
+                          label: 'Signalés',
                           icon: Icons.warning_amber_rounded,
                           accent: const Color(0xFFA86F06),
                           tint: sabeelAmber.withValues(alpha: 0.16),
