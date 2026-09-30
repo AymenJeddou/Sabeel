@@ -34,7 +34,7 @@ async def chat(prompt: str) -> Optional[str]:
     """Free-form LLM answer via the RAG service's POST /chat, or None on any
     failure -- the assistant then falls back to a data-only answer."""
     try:
-        async with httpx.AsyncClient(timeout=settings.rag_timeout_s + 15) as client:
+        async with httpx.AsyncClient(timeout=settings.rag_timeout_s + 35) as client:
             response = await client.post(f"{settings.rag_service_url}/chat", json={"prompt": prompt})
         response.raise_for_status()
         return response.json().get("content") or None

@@ -35,13 +35,24 @@ async def stats(db: AsyncSession = Depends(get_db)) -> dict:
     return compute_stats(await _summaries(db))
 
 
+# The playbook per pothole, so the LLM copies the method instead of mapping
+# severity to method itself (Llama-8B got that wrong).
+METHOD = {
+    1: "surveillance, colmatage à froid",
+    2: "surveillance, colmatage à froid",
+    3: "enrobé à chaud sous 14 j",
+    4: "balisage immédiat + réparation définitive sous 7 j",
+    5: "balisage immédiat + réparation définitive sous 48 h",
+}
+
+
 def _line(p: dict, now: datetime) -> str:
     age = (now - p["created_at"]).days
     due = " | ÉCHÉANCE DÉPASSÉE" if p["overdue"] else ""
     return (
         f"{p['ref']} | sévérité {p['score'] or '?'} /5 | {STATUS_FR[p['status'].value]} | "
         f"{p['address'] or 'adresse inconnue'} | GPS {p['lat']:.5f}, {p['lon']:.5f} | "
-        f"{p['cluster_size']} signalement(s) | il y a {age} j | {p['target_office'] or 'non attribué'}{due}"
+        f"{p['cluster_size']} signalement(s) | il y a {age} j | {p['target_office'] or 'non attribué'} | méthode : {METHOD.get(p['score'], 'inspection sur place')}{due}"
     )
 
 
@@ -77,7 +88,7 @@ Règles strictes :
 
 Statistiques au {now:%d/%m/%Y} : {s['potholes_total']} nids-de-poule suivis ({s['reports_total']} signalements citoyens) ; {s['open']} ouverts dont {s['urgent_open']} urgents et {s['overdue']} en retard ; {s['fixed']} réparés ; {s['rejected']} rejetés (faux positifs) ; délai médian de réparation {s['median_repair_days'] or '—'} j ; répartition par bureau {s['by_office']} ; quartiers les plus touchés {s['top_zones']}.
 
-Nids-de-poule ouverts, du plus prioritaire au moins prioritaire (référence | sévérité | statut | adresse | GPS | nb de signalements | âge | bureau) :
+Nids-de-poule ouverts, du plus prioritaire au moins prioritaire (référence | sévérité | statut | adresse | GPS | nb de signalements | âge | bureau | méthode de réparation à citer telle quelle) :
 {data}
 
 {history}
