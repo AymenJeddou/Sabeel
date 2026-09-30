@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> new: report received
+    new --> confirmed: second report ≤ 5 m<br/>or human confirmation
+    confirmed --> sheet_sent: RAG sheet generated<br/>and routed (score ≥ 3)
+    sheet_sent --> fixed: office marks repair done
+    fixed --> [*]
+
+    new --> fixed:  409 Conflict
+    confirmed --> fixed:  409 Conflict
+    note right of sheet_sent
+        Only forward, one-step transitions
+        are accepted. Enforced in
+        backend/app/status.py
+    end note

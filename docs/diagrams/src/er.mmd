@@ -1,0 +1,40 @@
+erDiagram
+    REPORTS {
+        uuid report_id PK
+        text device_report_id UK "phone-generated, no account"
+        text photo_url
+        double lat "WGS84"
+        double lon "WGS84"
+        double gps_accuracy_m
+        double speed_kmh
+        double direction_deg "0-360"
+        timestamptz captured_at "UTC"
+        report_source source "manual | driving_mode"
+        smallint score "1-5 or null"
+        double confidence "0-1 or null"
+        report_status status "new|confirmed|sheet_sent|fixed"
+        uuid cluster_id "shared by merged duplicates"
+        text sheet_text "RAG output"
+        text target_office
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    REPORT_EVENTS {
+        uuid event_id PK
+        uuid report_id FK
+        report_status from_status
+        report_status to_status
+        text note
+        timestamptz created_at
+    }
+    RULE_CHUNKS {
+        text rule_id PK
+        text source "law / decree"
+        text road_type
+        text text
+        vector embedding "stored in Chroma"
+    }
+
+    REPORTS ||--o{ REPORT_EVENTS : "history (planned)"
+    REPORTS }o--o| REPORTS : "same cluster_id"
+    REPORTS }o..o{ RULE_CHUNKS : "cited by sheet (via rag)"

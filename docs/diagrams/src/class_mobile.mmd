@@ -1,0 +1,59 @@
+classDiagram
+    class RoadScanApp {
+        +build() MaterialApp
+    }
+    class SplashScreen
+    class RootShell {
+        +bottom navigation
+    }
+    class HomeScreen
+    class CameraCaptureScreen
+    class ReportPreviewScreen
+    class ReportResultScreen
+    class MapScreen
+    class ReportsScreen
+    class ReportDraft {
+        +String deviceReportId
+        +double lat
+        +double lon
+        +double gpsAccuracyM
+        +double speedKmh
+        +double directionDeg
+        +DateTime capturedAt
+        +String source
+    }
+    class QueuedReport {
+        +ReportDraft draft
+        +String photoPath
+        +toJson()
+        +fromJson()
+    }
+    class ReportResult
+    class ApiClient {
+        +submitReport(draft, photo)
+        +getMap(bbox)
+        +getReport(deviceReportId)
+    }
+    class LocationService {
+        +currentPosition()
+        +heading()
+    }
+    class OfflineQueueRepository {
+        +enqueue()
+        +pending()
+        +remove()
+    }
+
+    RoadScanApp --> SplashScreen
+    SplashScreen --> RootShell
+    RootShell --> HomeScreen
+    RootShell --> MapScreen
+    RootShell --> ReportsScreen
+    HomeScreen --> CameraCaptureScreen
+    CameraCaptureScreen --> ReportPreviewScreen
+    ReportPreviewScreen --> ReportResultScreen
+    ReportPreviewScreen ..> ApiClient
+    CameraCaptureScreen ..> LocationService
+    ReportPreviewScreen ..> OfflineQueueRepository
+    QueuedReport o-- ReportDraft
+    ApiClient ..> ReportResult

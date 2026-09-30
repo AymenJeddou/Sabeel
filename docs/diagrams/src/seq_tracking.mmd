@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    actor U as Citizen
+    participant A as Mobile app
+    participant API as Core API
+    actor O as Municipality officer
+
+    O->>API: PATCH /reports/{report_id} {status: fixed}
+    API-->>O: 200 {status, updated_at}
+    loop periodic refresh
+        A->>API: GET /reports/{device_report_id}
+        API-->>A: {status, score, sheet_summary}
+    end
+    A->>A: status changed to fixed?
+    A-->>U: Local notification "Your report was fixed"

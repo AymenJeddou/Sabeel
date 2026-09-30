@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph mobile["mobile (Dart)"]
+        M_UI["screens"] --> M_SVC["services"]
+        M_SVC --> M_MOD["models"]
+    end
+    subgraph backend["backend/app (Python)"]
+        B_R["routers"] --> B_DEDUP["dedup"]
+        B_R --> B_ST["status"]
+        B_R --> B_VC["vision_client"]
+        B_R --> B_RC["rag_client"]
+        B_R --> B_DB["db / db_models"]
+    end
+    subgraph ml["ml-training"]
+        ML_INF["inference"] --> ML_SEV["severity_scoring"]
+        ML_INF --> ML_M[("pothole_model.onnx")]
+    end
+    subgraph rag["rag-service"]
+        R_MAIN["main"] --> R_PIPE["pipeline"]
+        R_PIPE --> R_RET["retrieval"]
+        R_PIPE --> R_GEN["generation"]
+        R_GEN --> R_CG["citation_guard"]
+        R_ING["ingestion"] --> R_RET
+    end
+
+    M_SVC -- "HTTP / REST" --> B_R
+    B_VC -- "import (in-process)" --> ML_INF
+    B_RC -- "HTTP /generate" --> R_MAIN
