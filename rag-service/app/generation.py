@@ -51,16 +51,21 @@ en listant uniquement les identifiants des règles ci-dessus que tu as réelleme
 """
 
 
-def _do_chat_completion(prompt: str, timeout_s: float) -> str:
-    client = InferenceClient(model=config.HF_MODEL_PRIMARY, token=config.HF_API_TOKEN, timeout=timeout_s)
+def _do_chat_completion(prompt: str, timeout_s: float, model: str, max_tokens: int) -> str:
+    client = InferenceClient(model=model, token=config.HF_API_TOKEN, timeout=timeout_s)
     response = client.chat_completion(
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=400,
+        max_tokens=max_tokens,
     )
     return response.choices[0].message.content
 
 
-def call_llm(prompt: str, timeout_s: float | None = None) -> str | None:
+def call_llm(
+    prompt: str,
+    timeout_s: float | None = None,
+    model: str | None = None,
+    max_tokens: int = 400,
+) -> str | None:
     """Single attempt against the primary model, bounded by a real wall-clock
     timeout (see module docstring -- huggingface_hub's own timeout kwarg is
     not trusted). Never chains multiple models at runtime. Returns None on
@@ -72,7 +77,7 @@ def call_llm(prompt: str, timeout_s: float | None = None) -> str | None:
 
     timeout_s = timeout_s or config.LLM_TIMEOUT_S
 
-    future = _executor.submit(_do_chat_completion, prompt, timeout_s)
+    future = _executor.submit(_do_chat_completion, prompt, timeout_s, model or config.HF_MODEL_PRIMARY, max_tokens)
     try:
         return future.result(timeout=timeout_s)
     except FutureTimeoutError:

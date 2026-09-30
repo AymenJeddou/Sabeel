@@ -43,8 +43,9 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 def chat_endpoint(req: ChatRequest) -> dict:
     """Free-form LLM call for the dashboard assistant (the Core API builds the
-    prompt from its database). Same bounded call as /generate, longer budget."""
-    content = call_llm(req.prompt, timeout_s=25)
+    prompt from its database). Same bounded call as /generate, with the larger
+    model: the 8B one mislabels severities when reasoning over ~30 rows."""
+    content = call_llm(req.prompt, timeout_s=40, model=config.HF_MODEL_BACKUP, max_tokens=800)
     if content is None:
         raise HTTPException(status_code=503, detail="LLM unavailable")
     return {"content": content}
