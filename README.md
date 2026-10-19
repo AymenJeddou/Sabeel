@@ -11,7 +11,7 @@ A citizen snaps a photo, an AI grades the pothole, and a repair order that quote
 ![React](https://img.shields.io/badge/React-dashboard-149ECA?logo=react&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-core%20API-009688?logo=fastapi&logoColor=white)
 ![PostGIS](https://img.shields.io/badge/PostGIS-5%20m%20dedup-4169E1?logo=postgresql&logoColor=white)
-![YOLOv8n](https://img.shields.io/badge/YOLOv8n-ONNX%20on%20CPU-111F68)
+![YOLO11s](https://img.shields.io/badge/YOLO11s-mAP50%200.56%20·%20ONNX%20on%20CPU-111F68)
 ![RAG](https://img.shields.io/badge/RAG-Chroma%20%2B%20open%20LLMs-FF9D00?logo=huggingface&logoColor=white)
 ![Budget](https://img.shields.io/badge/budget-0%20TND-0F6E6A)
 
@@ -30,7 +30,7 @@ Sabeel ("the way") closes the gap between *a pothole appears* and *a repair orde
 | | Step | What happens |
 |---|---|---|
 | 📸 | **Snap** | A citizen takes a photo. GPS, speed and heading are attached. No account. |
-| 🧠 | **Score** | A YOLOv8n model grades severity 1–5 on a plain CPU (≈ 71 ms). |
+| 🧠 | **Score** | A YOLO11s model finds the pothole and grades severity 1–5 on a plain CPU (≈ 240 ms). |
 | 📍 | **Confirm** | Two reports within 5 m merge into one confirmed pothole (PostGIS). |
 | 📝 | **Write** | For severity ≥ 3 a RAG agent drafts the work order and cites the real law. |
 | 🏛️ | **Route** | The order goes to the baladiya or the DGPC depending on the road type. |
@@ -82,7 +82,7 @@ An AI assistant for the technical service. Ask in French, Arabic or English; it 
 <td width="45%"><img src="docs/images/detection.jpg" alt="Our model detecting a pothole"></td>
 <td>
 
-**Detection** — YOLOv8n trained on RDD2022 (pothole class D40) and an annotated pothole dataset from Hugging Face, exported to a 12 MB ONNX file and served with ONNX Runtime on a CPU. Severity comes from the size of the box.
+**Detection** — YOLO11s trained for 100 epochs on RDD2022 potholes (6 countries), close-up pothole photos and pothole-free roads, exported to ONNX and served with ONNX Runtime on a CPU. On 686 held-out test images: **mAP50 0.56**, precision 0.62, recall 0.54 ([details](ml-training/README.md)). Severity comes from the size of the box.
 
 **Work orders** — a RAG agent retrieves the matching rules (multilingual MiniLM embeddings in Chroma), an open-weight LLM writes the sheet, and every citation is checked against what it was shown. One bad citation and the draft is replaced by a template built from the real excerpts. Legal base: Loi organique 2018-29 (art. 69) and Loi 86-17.
 
@@ -97,7 +97,7 @@ flowchart LR
     phone["📱 Mobile app<br/>Flutter"] -->|POST /reports| api
     web["🖥️ Dashboard<br/>React + Vite"] -->|REST| api
     api["⚙️ Core API<br/>FastAPI"] --> db[("PostgreSQL<br/>+ PostGIS")]
-    api -->|infer| vision["🧠 YOLOv8n<br/>ONNX Runtime"]
+    api -->|infer| vision["🧠 YOLO11s<br/>ONNX Runtime"]
     api -->|/generate · /chat| rag["📝 RAG service<br/>Chroma + LLM"]
     rag --> hf["Hugging Face<br/>Llama 3.1 · Qwen 2.5"]
 ```
@@ -107,7 +107,7 @@ flowchart LR
 | Mobile app | [`mobile/`](mobile) | Flutter, flutter_map (OpenStreetMap) |
 | Authorities dashboard | [`dashboard/`](dashboard) | React, TypeScript, Vite, Leaflet |
 | Core API | [`backend/app`](backend/app) | FastAPI, SQLAlchemy, PostgreSQL + PostGIS |
-| Vision model | [`ml-training/`](ml-training), [`backend/vision`](backend/vision) | YOLOv8n, ONNX Runtime (CPU) |
+| Vision model | [`ml-training/`](ml-training), [`backend/vision`](backend/vision) | YOLO11s, ONNX Runtime (CPU) |
 | RAG service | [`rag-service/`](rag-service) | Chroma, sentence-transformers, Hugging Face Inference |
 
 ## Quick start

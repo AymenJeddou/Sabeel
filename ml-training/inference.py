@@ -23,93 +23,72 @@ from severity_scoring import score_from_detections
 
 # Shared config (Section 4.6)
 MODEL_PATH = Path(os.getenv("MODEL_PATH", "models/pothole_model.onnx"))
+# Tuned on the validation split (max F1), see ml-training/README.md
+CONF_THRESHOLD = float(os.getenv("CONF_THRESHOLD", "0.28"))
+NMS_IOU = 0.45
 
 # Load once
 _session = None
 _input_name = None
-_output_names = None
+_imgsz = None
 
 
 def _get_session():
-    global _session, _input_name, _output_names
+    global _session, _input_name, _imgsz
     if _session is None:
         if not MODEL_PATH.exists():
             raise FileNotFoundError(f"ONNX model not found at {MODEL_PATH}")
-        providers = ["CPUExecutionProvider"]
-        _session = ort.InferenceSession(str(MODEL_PATH), providers=providers)
-        _input_name = _session.get_inputs()[0].name
-        _output_names = [o.name for o in _session.get_outputs()]
-    return _session, _input_name, _output_names
+        _session = ort.InferenceSession(str(MODEL_PATH), providers=["CPUExecutionProvider"])
+        inp = _session.get_inputs()[0]
+        _input_name = inp.name
+        _imgsz = int(inp.shape[2])  # fixed square input baked into the export (640, 800, ...)
+    return _session, _input_name, _imgsz
 
 
-def _preprocess(image_bytes: bytes, imgsz: int = 640):
+def _preprocess(image_bytes: bytes, imgsz: int):
+    """Letterbox like Ultralytics training: keep aspect ratio, pad with grey (114)."""
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     if img is None:
         raise ValueError("Could not decode image bytes")
 
     orig_h, orig_w = img.shape[:2]
-    img_resized = cv2.resize(img, (imgsz, imgsz))
-    img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
-    img_norm = img_rgb.astype(np.float32) / 255.0
-    img_chw = np.transpose(img_norm, (2, 0, 1))[None, ...]  # 1x3xHxW
-    return img_chw, (orig_h, orig_w)
+    r = min(imgsz / orig_h, imgsz / orig_w)
+    new_w, new_h = round(orig_w * r), round(orig_h * r)
+    pad_x, pad_y = (imgsz - new_w) / 2, (imgsz - new_h) / 2
+    resized = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+    top, left = round(pad_y - 0.1), round(pad_x - 0.1)
+    canvas = cv2.copyMakeBorder(resized, top, imgsz - new_h - top, left, imgsz - new_w - left,
+                                cv2.BORDER_CONSTANT, value=(114, 114, 114))
+
+    img_rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
+    img_chw = np.transpose(img_rgb.astype(np.float32) / 255.0, (2, 0, 1))[None, ...]  # 1x3xHxW
+    return img_chw, (orig_h, orig_w), r, (left, top)
 
 
-def _postprocess(outputs, orig_shape, conf_thres=0.25, imgsz=640):
-    """
-    Simple post-processing for YOLOv8 ONNX output shape (1, 5, 8400)
-    """
-    pred = outputs[0]  # (1, 5, 8400)
-    pred = np.squeeze(pred).T  # (8400, 5) → [x, y, w, h, conf]
+def _postprocess(outputs, orig_shape, ratio, pad, conf_thres=CONF_THRESHOLD):
+    """YOLOv8/YOLO11 single-class output (1, 5, N): rows of [cx, cy, w, h, conf] in letterbox pixels."""
+    pred = np.squeeze(outputs[0]).T  # (N, 5)
+    pred = pred[pred[:, 4] >= conf_thres]
+    if not len(pred):
+        return []
 
-    boxes = []
     orig_h, orig_w = orig_shape
-    scale_x = orig_w / imgsz
-    scale_y = orig_h / imgsz
+    left, top = pad
+    cx, cy, w, h, conf = pred.T
+    x1 = np.clip((cx - w / 2 - left) / ratio, 0, orig_w)
+    y1 = np.clip((cy - h / 2 - top) / ratio, 0, orig_h)
+    x2 = np.clip((cx + w / 2 - left) / ratio, 0, orig_w)
+    y2 = np.clip((cy + h / 2 - top) / ratio, 0, orig_h)
 
-    for row in pred:
-        conf = float(row[4])
-        if conf < conf_thres:
-            continue
-
-        # YOLO format is center_x, center_y, width, height (normalized to 640)
-        cx, cy, w, h = row[:4]
-        x1 = int((cx - w / 2) * scale_x)
-        y1 = int((cy - h / 2) * scale_y)
-        bw = int(w * scale_x)
-        bh = int(h * scale_y)
-
-        # Clamp to image
-        x1 = max(0, x1)
-        y1 = max(0, y1)
-        bw = min(bw, orig_w - x1)
-        bh = min(bh, orig_h - y1)
-
+    xywh = np.stack([x1, y1, x2 - x1, y2 - y1], axis=1)
+    keep = cv2.dnn.NMSBoxes(xywh.tolist(), conf.tolist(), conf_thres, NMS_IOU)
+    boxes = []
+    for i in np.array(keep).flatten():
+        bx, by, bw, bh = (int(v) for v in xywh[i])
         if bw > 5 and bh > 5:  # ignore tiny boxes
-            boxes.append({
-                "x": x1,
-                "y": y1,
-                "w": bw,
-                "h": bh,
-                "conf": conf,
-                "class": "pothole"
-            })
-
-    # Simple NMS (very basic – good enough for Sprint 1)
-    boxes = sorted(boxes, key=lambda b: b["conf"], reverse=True)
-    keep = []
-    while boxes:
-        best = boxes.pop(0)
-        keep.append(best)
-        boxes = [
-            b for b in boxes
-            if not (
-                abs(b["x"] - best["x"]) < best["w"] * 0.5 and
-                abs(b["y"] - best["y"]) < best["h"] * 0.5
-            )
-        ]
-    return keep
+            boxes.append({"x": bx, "y": by, "w": bw, "h": bh, "conf": float(conf[i]), "class": "pothole"})
+    return sorted(boxes, key=lambda b: b["conf"], reverse=True)
 
 
 def infer(image: bytes) -> Dict[str, Any]:
@@ -118,16 +97,16 @@ def infer(image: bytes) -> Dict[str, Any]:
     """
     t0 = time.perf_counter()
 
-    session, input_name, _ = _get_session()
-    input_tensor, (orig_h, orig_w) = _preprocess(image)
+    session, input_name, imgsz = _get_session()
+    input_tensor, (orig_h, orig_w), ratio, pad = _preprocess(image, imgsz)
 
     outputs = session.run(None, {input_name: input_tensor})
-    boxes = _postprocess(outputs, (orig_h, orig_w))
+    boxes = _postprocess(outputs, (orig_h, orig_w), ratio, pad)
 
     confidences = [b["conf"] for b in boxes]
     overall_conf = float(max(confidences)) if confidences else 0.0
 
-    score = score_from_detections(boxes, orig_w, orig_h)
+    score = score_from_detections(boxes, orig_w, orig_h, conf_threshold=CONF_THRESHOLD)
 
     inference_ms = (time.perf_counter() - t0) * 1000.0
 
@@ -147,13 +126,11 @@ def infer(image: bytes) -> Dict[str, Any]:
 
 # Quick self-test
 if __name__ == "__main__":
-    # Put any pothole image path here for a quick test
-    test_img = Path("datasets/yolo_annotated_potholes/images/val")
-    imgs = list(test_img.glob("*.jpg")) + list(test_img.glob("*.png"))
-    if imgs:
-        with open(imgs[0], "rb") as f:
-            result = infer(f.read())
+    import sys
+    test_img = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("../backend/app/static/photos/_seed/p01.jpg")
+    if test_img.exists():
+        result = infer(test_img.read_bytes())
         print("Self-test result:")
         print(result)
     else:
-        print("No test image found – place one and re-run.")
+        print("No test image found – pass an image path.")
