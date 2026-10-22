@@ -1,28 +1,25 @@
 from ultralytics import YOLO
-from pathlib import Path
+
+# Same settings as colab/train_pothole_yolo11s.ipynb, which produced models/pothole_model.onnx.
+# That notebook also builds the dataset (RDD2022 D40 + close-up photos + negatives, 70/15/15)
+# and writes data.yaml; run it on a GPU, this script is for local reruns on that data.
 
 def main():
-    # Load the smallest pretrained model (YOLOv8n)
-    model = YOLO("yolov8n.pt")          # will download automatically the first time
-
-    # Sprint 1 goal = working pipeline, not accuracy → 1 epoch only
+    model = YOLO("yolo11s.pt")          # downloads automatically the first time
     results = model.train(
         data="data.yaml",
-        epochs=1,                       # ← required for Sprint 1
+        epochs=100,
         imgsz=640,
-        batch=8,                        # reduce to 4 if you have low RAM / CPU only
-        device="cpu",                   # change to 0 if you have a GPU
-        name="pothole_yolov8n_sprint1",
+        batch=-1,                       # auto batch for the GPU
+        device=0,
+        patience=25,
+        cos_lr=True,
+        close_mosaic=10,
+        name="pothole_yolo11s",
         exist_ok=True,
-        patience=5,
-        save=True,
-        plots=True,
-        workers=4,
     )
-
-    print("\nTraining finished!")
     print("Best weights:", results.save_dir / "weights" / "best.pt")
-    print("You can now export to ONNX.")
+    print("Next: python export_onnx.py")
 
 if __name__ == "__main__":
     main()

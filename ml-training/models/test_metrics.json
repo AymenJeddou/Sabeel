@@ -1,0 +1,18 @@
+{
+  "model": "yolo11s.pt",
+  "epochs": 100,
+  "imgsz": 640,
+  "test_images": 686,
+  "precision": 0.6157,
+  "recall": 0.5372,
+  "mAP50": 0.5621,
+  "mAP50-95": 0.2478,
+  "conf_threshold": 0.28,
+  "test_F1_at_threshold": 0.5729,
+  "cpu_ms_colab": 231.9,
+  "onnx_output_shape": [
+    1,
+    5,
+    8400
+  ]
+}
