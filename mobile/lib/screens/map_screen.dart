@@ -292,7 +292,9 @@ class _PotholeSheetState extends State<_PotholeSheet> {
 
   Future<void> _locate() async {
     try {
-      final fix = await const LocationService().captureSnapshot();
+      final fix = await const LocationService().captureSnapshot().timeout(
+        const Duration(seconds: 20),
+      );
       final p = widget.pothole;
       if (!mounted) return;
       setState(() {
@@ -304,6 +306,9 @@ class _PotholeSheetState extends State<_PotholeSheet> {
       });
     } on LocationServiceException catch (e) {
       if (mounted) setState(() => _blocked = e.message);
+    } catch (e) {
+      debugPrint('sabeel locate failed: $e');
+      if (mounted) setState(() => _blocked = 'Position GPS indisponible.');
     }
   }
 

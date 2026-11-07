@@ -14,7 +14,7 @@ class Notifier {
     if (_ready || kIsWeb) return;
     try {
       await _plugin.initialize(
-        settings: const InitializationSettings(
+        const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
           iOS: DarwinInitializationSettings(
             requestAlertPermission: false,
@@ -50,10 +50,10 @@ class Notifier {
     if (!_ready) return;
     try {
       await _plugin.show(
-        id: id,
-        title: title,
-        body: body,
-        notificationDetails: const NotificationDetails(
+        id,
+        title,
+        body,
+        const NotificationDetails(
           android: AndroidNotificationDetails(
             'report_status',
             'Suivi des signalements',
