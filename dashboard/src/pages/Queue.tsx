@@ -67,7 +67,7 @@ export default function Queue({ focus, onChanged, version }: { focus?: string; o
           {!queue.data ? <Loading /> : (
             <table className="table">
               <thead>
-                <tr><th>Réf.</th><th>Adresse</th><th>Priorité</th><th>Sévérité</th><th>Statut</th><th>Fiche</th><th>Route</th><th>Citoyens</th><th>Échéance</th></tr>
+                <tr><th>Réf.</th><th>Adresse</th><th>Priorité</th><th>Sévérité</th><th>Statut</th><th className="opt">Fiche</th><th className="opt">Route</th><th className="opt">Citoyens</th><th>Échéance</th></tr>
               </thead>
               <tbody>
                 {queue.data.items.map((p) => (
@@ -77,9 +77,9 @@ export default function Queue({ focus, onChanged, version }: { focus?: string; o
                     <td><Priority p={p} /></td>
                     <td><Severity score={p.severity} /></td>
                     <td><StatusBadge status={p.status} /></td>
-                    <td><SheetBadge status={p.sheet_status} /></td>
-                    <td className="small">{p.road_ref ?? ROAD_CLASS[p.road_class ?? ''] ?? '—'}</td>
-                    <td>{p.device_count}</td>
+                    <td className="opt"><SheetBadge status={p.sheet_status} /></td>
+                    <td className="small opt">{p.road_ref ?? ROAD_CLASS[p.road_class ?? ''] ?? '—'}</td>
+                    <td className="opt">{p.device_count}</td>
                     <td><Deadline p={p} /></td>
                   </tr>
                 ))}
