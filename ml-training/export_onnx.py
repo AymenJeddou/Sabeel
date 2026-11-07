@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 
 # Path to the best weights from training
-weights = Path("runs/detect/pothole_yolov8n_sprint1/weights/best.pt")
+weights = Path("runs/detect/pothole_yolo11s/weights/best.pt")
 
 print("Loading model...")
 model = YOLO(str(weights))

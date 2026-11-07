@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/roadscan_app.dart';
 import 'services/device.dart';
+import 'services/notifier.dart';
 import 'services/offline_queue_repository.dart';
 import 'services/sabeel_data.dart';
 
@@ -16,9 +17,11 @@ Future<void> main() async {
 
   await initDeviceId(prefs);
 
-  final data = SabeelData(queueRepository);
-  // Tabs also refresh on start/switch and pull-to-refresh; this keeps an
-  // open screen current (status changes made on the dashboard).
+  await Notifier.instance.init();
+
+  final data = SabeelData(queueRepository)..watchConnectivity();
+  // Uploads and status sync run on start, on tab switch, on pull-to-refresh,
+  // when the network comes back, and every 30 s while the app is open.
   Timer.periodic(const Duration(seconds: 30), (_) => data.refresh());
 
   runApp(RoadScanApp(data: data));

@@ -19,6 +19,7 @@ jobs:
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
+      # The tests create and migrate their own `sabeel_test` database on this server.
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/roadscan
     steps:
       - uses: actions/checkout@v4
@@ -27,9 +28,24 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/app/requirements.txt
-      - run: psql -v ON_ERROR_STOP=1 -f backend/app/db/schema.sql postgresql://postgres:postgres@localhost:5432/roadscan
       - run: pip install -r backend/app/requirements.txt
-      - run: python -m pytest backend/app/tests -v
+      - run: python -m pytest backend/app/tests -q
+      - name: Migrations apply cleanly to an empty database
+        run: python -m backend.app.migrate
+
+  ml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install onnxruntime "opencv-python-headless<5" numpy
+      - run: python severity_scoring.py
+        working-directory: ml-training
+      - name: Model loads and finds a pothole in a seed photo
+        working-directory: ml-training
+        run: python inference.py ../backend/app/static/photos/_seed/p08.jpg
 
   rag-service:
     runs-on: ubuntu-latest
@@ -47,6 +63,23 @@ jobs:
       - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
       - run: pip install -r requirements.txt
       - run: python -m pytest tests -v
+
+  dashboard:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
 
   mobile:
     runs-on: ubuntu-latest

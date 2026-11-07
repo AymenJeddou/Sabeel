@@ -1,0 +1,823 @@
+[
+ {
+  "name": "RN1 at Radès",
+  "lat": 36.753441,
+  "lon": 10.249427,
+  "nominatim": {
+   "lat": "36.7534410",
+   "lon": "10.2494270",
+   "category": "highway",
+   "type": "primary",
+   "addresstype": "primary",
+   "name": "Route Nationale Tunis - Ras Jedir",
+   "display_name": "Route Nationale Tunis - Ras Jedir, Rades Foret, Radès, Délégation Radès, Gouvernorat Ben Arous, 2063, Tunisie",
+   "address": {
+    "road": "Route Nationale Tunis - Ras Jedir",
+    "city_district": "Rades Foret",
+    "town": "Radès",
+    "state_district": "Délégation Radès",
+    "state": "Gouvernorat Ben Arous",
+    "ISO3166-2-lvl4": "TN-13",
+    "postcode": "2063",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "ref": "RN1",
+    "name": "الطريق الوطنية تونس - رأس جدير",
+    "name:ar": "الطريق الوطنية تونس - رأس جدير",
+    "name:fr": "Route Nationale Tunis - Ras Jedir"
+   }
+  },
+  "intended": {
+   "road_class": "national",
+   "office_kind": "DGPC"
+  },
+  "expected": {
+   "road_class": "national",
+   "road_type": "urbain_principal",
+   "road_ref": "RN1",
+   "region": "Ben Arous",
+   "municipality": "Radès"
+  }
+ },
+ {
+  "name": "RN9 at La Marsa",
+  "lat": 36.875413,
+  "lon": 10.323792,
+  "nominatim": {
+   "lat": "36.8754132",
+   "lon": "10.3237919",
+   "category": "highway",
+   "type": "trunk",
+   "addresstype": "trunk",
+   "name": "Route Nationale Tunis - La Marsa",
+   "display_name": "Route Nationale Tunis - La Marsa, La Marsa, Cité Ennassim, La Marsa El Montazeh, Délégation La Marsa, Tunis, Gouvernorat Tunis, 2070, Tunisie",
+   "address": {
+    "road": "Route Nationale Tunis - La Marsa",
+    "residential": "La Marsa",
+    "suburb": "Cité Ennassim",
+    "city_district": "Délégation La Marsa",
+    "city": "Tunis",
+    "state": "Gouvernorat Tunis",
+    "ISO3166-2-lvl4": "TN-11",
+    "postcode": "2070",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "ref": "RN9",
+    "name": "الطريق الوطنية تونس - المرسى",
+    "name:ar": "الطريق الوطنية تونس - المرسى",
+    "name:fr": "Route Nationale Tunis - La Marsa"
+   }
+  },
+  "intended": {
+   "road_class": "national",
+   "office_kind": "DGPC"
+  },
+  "expected": {
+   "road_class": "national",
+   "road_type": "urbain_principal",
+   "road_ref": "RN9",
+   "region": "Tunis",
+   "municipality": "Tunis"
+  }
+ },
+ {
+  "name": "Avenue Habib Bourguiba, Tunis (tagged RN9)",
+  "lat": 36.800537,
+  "lon": 10.187926,
+  "nominatim": {
+   "lat": "36.8005369",
+   "lon": "10.1879260",
+   "category": "highway",
+   "type": "primary",
+   "addresstype": "primary",
+   "name": "Avenue Habib Bourguiba",
+   "display_name": "Avenue Habib Bourguiba, Habib Thameur, Délégation Bab Bhar, Tunis, Gouvernorat Tunis, 1151, Tunisie",
+   "address": {
+    "road": "Avenue Habib Bourguiba",
+    "suburb": "Habib Thameur",
+    "city_district": "Délégation Bab Bhar",
+    "city": "Tunis",
+    "state": "Gouvernorat Tunis",
+    "ISO3166-2-lvl4": "TN-11",
+    "postcode": "1151",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "ref": "RN9",
+    "name": "شارع الحبيب بورقيبة",
+    "name:ar": "شارع الحبيب بورقيبة",
+    "name:es": "Avenida Habib Burguiba",
+    "name:fr": "Avenue Habib Bourguiba"
+   }
+  },
+  "intended": {
+   "road_class": "national",
+   "office_kind": "DGPC"
+  },
+  "expected": {
+   "road_class": "national",
+   "road_type": "urbain_principal",
+   "road_ref": "RN9",
+   "region": "Tunis",
+   "municipality": "Tunis"
+  }
+ },
+ {
+  "name": "Avenue Mohamed V, Tunis",
+  "lat": 36.801232,
+  "lon": 10.186305,
+  "nominatim": {
+   "lat": "36.8012320",
+   "lon": "10.1863051",
+   "category": "highway",
+   "type": "primary",
+   "addresstype": "primary",
+   "name": "Avenue Mohamed V",
+   "display_name": "Avenue Mohamed V, Habib Thameur, Délégation Bab Bhar, Tunis, Gouvernorat Tunis, 1017, Tunisie",
+   "address": {
+    "road": "Avenue Mohamed V",
+    "suburb": "Habib Thameur",
+    "city_district": "Délégation Bab Bhar",
+    "city": "Tunis",
+    "state": "Gouvernorat Tunis",
+    "ISO3166-2-lvl4": "TN-11",
+    "postcode": "1017",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "name": "شارع محمد الخامس",
+    "name:ar": "شارع محمد الخامس",
+    "name:fr": "Avenue Mohamed V"
+   }
+  },
+  "intended": {
+   "road_class": "urbain_principal",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "urbain_principal",
+   "road_type": "urbain_principal",
+   "road_ref": null,
+   "region": "Tunis",
+   "municipality": "Tunis"
+  }
+ },
+ {
+  "name": "Rue de Marseille, Tunis",
+  "lat": 36.80375,
+  "lon": 10.181782,
+  "nominatim": {
+   "lat": "36.8037501",
+   "lon": "10.1817823",
+   "category": "highway",
+   "type": "residential",
+   "addresstype": "residential",
+   "name": "Rue de Marseille",
+   "display_name": "Rue de Marseille, Habib Thameur, Délégation Bab Bhar, Tunis, Gouvernorat Tunis, 1000, Tunisie",
+   "address": {
+    "road": "Rue de Marseille",
+    "suburb": "Habib Thameur",
+    "city_district": "Délégation Bab Bhar",
+    "city": "Tunis",
+    "state": "Gouvernorat Tunis",
+    "ISO3166-2-lvl4": "TN-11",
+    "postcode": "1000",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "name": "Rue de Marseille",
+    "name:ar": "نهج مارسيليا",
+    "name:fr": "Rue de Marseille"
+   }
+  },
+  "intended": {
+   "road_class": "urbain_secondaire",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "urbain_secondaire",
+   "road_type": "urbain_secondaire",
+   "road_ref": null,
+   "region": "Tunis",
+   "municipality": "Tunis"
+  }
+ },
+ {
+  "name": "Avenue de la Liberté, Tunis",
+  "lat": 36.805311,
+  "lon": 10.1501,
+  "nominatim": {
+   "lat": "36.8053149",
+   "lon": "10.1501125",
+   "category": "highway",
+   "type": "tertiary",
+   "addresstype": "tertiary",
+   "name": "Avenue de la Liberté",
+   "display_name": "Avenue de la Liberté, Borj Zouara, Borj Flifel, Borj Zouara, Délégation Bab Souika, Tunis, Gouvernorat Tunis, 2000, Tunisie",
+   "address": {
+    "road": "Avenue de la Liberté",
+    "residential": "Borj Zouara",
+    "suburb": "Borj Flifel",
+    "city_district": "Délégation Bab Souika",
+    "city": "Tunis",
+    "state": "Gouvernorat Tunis",
+    "ISO3166-2-lvl4": "TN-11",
+    "postcode": "2000",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "name": "شارع الحرّيّة",
+    "name:ar": "شارع الحرّيّة",
+    "name:fr": "Avenue de la Liberté",
+    "short_name:fr": "Liberté"
+   }
+  },
+  "intended": {
+   "road_class": "urbain_principal",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "urbain_secondaire",
+   "road_type": "urbain_secondaire",
+   "road_ref": null,
+   "region": "Tunis",
+   "municipality": "Tunis"
+  }
+ },
+ {
+  "name": "Avenue Habib Bourguiba, La Marsa",
+  "lat": 36.86439,
+  "lon": 10.310499,
+  "nominatim": {
+   "lat": "36.8643880",
+   "lon": "10.3104986",
+   "category": "highway",
+   "type": "tertiary",
+   "addresstype": "tertiary",
+   "name": "Avenue Habib Bourguiba",
+   "display_name": "Avenue Habib Bourguiba, Sidi Daoud, Sidi Daoued, Délégation La Marsa, Tunis, Gouvernorat Tunis, 2046, Tunisie",
+   "address": {
+    "road": "Avenue Habib Bourguiba",
+    "residential": "Sidi Daoud",
+    "suburb": "Sidi Daoued",
+    "city_district": "Délégation La Marsa",
+    "city": "Tunis",
+    "state": "Gouvernorat Tunis",
+    "ISO3166-2-lvl4": "TN-11",
+    "postcode": "2046",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "name": "شارع الحبيب بورقيبة",
+    "name:ar": "شارع الحبيب بورقيبة",
+    "name:fr": "Avenue Habib Bourguiba"
+   }
+  },
+  "intended": {
+   "road_class": "urbain_principal",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "urbain_secondaire",
+   "road_type": "urbain_secondaire",
+   "road_ref": null,
+   "region": "Tunis",
+   "municipality": "Tunis"
+  }
+ },
+ {
+  "name": "Avenue Hédi Nouira, El Menzah",
+  "lat": 36.85586,
+  "lon": 10.15911,
+  "nominatim": {
+   "lat": "36.8558599",
+   "lon": "10.1591100",
+   "category": "highway",
+   "type": "secondary",
+   "addresstype": "secondary",
+   "name": "Avenue Hédi Nouira",
+   "display_name": "Avenue Hédi Nouira, El Menzah 7, Nasr 1, Délégation Ariana Ville, Gouvernorat Ariana, 2203, Tunisie",
+   "address": {
+    "road": "Avenue Hédi Nouira",
+    "suburb": "El Menzah 7",
+    "county": "Nasr 1",
+    "state_district": "Délégation Ariana Ville",
+    "state": "Gouvernorat Ariana",
+    "ISO3166-2-lvl4": "TN-12",
+    "postcode": "2203",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "name": "شارع الهادي نويرة",
+    "name:ar": "شارع الهادي نويرة",
+    "name:fr": "Avenue Hédi Nouira"
+   }
+  },
+  "intended": {
+   "road_class": "urbain_principal",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "urbain_principal",
+   "road_type": "urbain_principal",
+   "road_ref": null,
+   "region": "Ariana",
+   "municipality": null
+  }
+ },
+ {
+  "name": "Rue du Lac Léman, Berges du Lac",
+  "lat": 36.84048,
+  "lon": 10.244134,
+  "nominatim": {
+   "lat": "36.8404945",
+   "lon": "10.2441296",
+   "category": "highway",
+   "type": "residential",
+   "addresstype": "residential",
+   "name": "Rue du Lac Leman",
+   "display_name": "Rue du Lac Leman, Les Berges du Lac, El Bouhaira, Délégation Cité El Khadra, Tunis, Gouvernorat Tunis, 1053, Tunisie",
+   "address": {
+    "road": "Rue du Lac Leman",
+    "residential": "Les Berges du Lac",
+    "suburb": "Les Berges du Lac",
+    "city_district": "Délégation Cité El Khadra",
+    "city": "Tunis",
+    "state": "Gouvernorat Tunis",
+    "ISO3166-2-lvl4": "TN-11",
+    "postcode": "1053",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "name": "نهج بحيرة ليمان",
+    "name:ar": "نهج بحيرة ليمان",
+    "name:fr": "Rue du Lac Leman"
+   }
+  },
+  "intended": {
+   "road_class": "urbain_secondaire",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "urbain_secondaire",
+   "road_type": "urbain_secondaire",
+   "road_ref": null,
+   "region": "Tunis",
+   "municipality": "Tunis"
+  }
+ },
+ {
+  "name": "Residential street, Ennasr",
+  "lat": 36.8565,
+  "lon": 10.163,
+  "nominatim": {
+   "lat": "36.8564486",
+   "lon": "10.1630185",
+   "category": "highway",
+   "type": "residential",
+   "addresstype": "residential",
+   "name": "Rue de Kaboul",
+   "display_name": "Rue de Kaboul, El Menzah 7, Nasr 1, Délégation Ariana Ville, Gouvernorat Ariana, 2203, Tunisie",
+   "address": {
+    "road": "Rue de Kaboul",
+    "suburb": "El Menzah 7",
+    "county": "Nasr 1",
+    "state_district": "Délégation Ariana Ville",
+    "state": "Gouvernorat Ariana",
+    "ISO3166-2-lvl4": "TN-12",
+    "postcode": "2203",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "name": "نهج كابل",
+    "name:ar": "نهج كابل",
+    "name:fr": "Rue de Kaboul"
+   }
+  },
+  "intended": {
+   "road_class": "urbain_secondaire",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "urbain_secondaire",
+   "road_type": "urbain_secondaire",
+   "road_ref": null,
+   "region": "Ariana",
+   "municipality": null
+  }
+ },
+ {
+  "name": "Sidi Bou Saïd village street",
+  "lat": 36.8706,
+  "lon": 10.3412,
+  "nominatim": {
+   "lat": "36.8705677",
+   "lon": "10.3412591",
+   "category": "highway",
+   "type": "residential",
+   "addresstype": "residential",
+   "name": "Rue Abou El Kacem Chebbi",
+   "display_name": "Rue Abou El Kacem Chebbi, Carthage - Amilcar, Amilcar, Carthage, Tunis, Gouvernorat Tunis, 2026, Tunisie",
+   "address": {
+    "road": "Rue Abou El Kacem Chebbi",
+    "residential": "Carthage - Amilcar",
+    "suburb": "Amilcar",
+    "city_district": "Carthage",
+    "city": "Tunis",
+    "state": "Gouvernorat Tunis",
+    "ISO3166-2-lvl4": "TN-11",
+    "postcode": "2026",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "name": "نهج أبو القاسم الشابي",
+    "name:ar": "نهج أبو القاسم الشابي",
+    "name:fr": "Rue Abou El Kacem Chebbi"
+   }
+  },
+  "intended": {
+   "road_class": "urbain_secondaire",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "urbain_secondaire",
+   "road_type": "urbain_secondaire",
+   "road_ref": null,
+   "region": "Tunis",
+   "municipality": "Tunis"
+  }
+ },
+ {
+  "name": "Avenue Habib Bourguiba, Sousse",
+  "lat": 35.8283,
+  "lon": 10.6372,
+  "nominatim": {
+   "lat": "35.8282908",
+   "lon": "10.6372008",
+   "category": "highway",
+   "type": "service",
+   "addresstype": "road",
+   "name": "Boulevard Yahia Ibn Omar",
+   "display_name": "Boulevard Yahia Ibn Omar, El Medina, Sousse, Délégation Sousse Medina, Gouvernorat Sousse, 4000, Tunisie",
+   "address": {
+    "road": "Boulevard Yahia Ibn Omar",
+    "city_district": "El Medina",
+    "city": "Sousse",
+    "state_district": "Délégation Sousse Medina",
+    "state": "Gouvernorat Sousse",
+    "ISO3166-2-lvl4": "TN-51",
+    "postcode": "4000",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "name": "شارع يحيى بن عمر",
+    "name:ar": "شارع يحيى بن عمر",
+    "name:fr": "Boulevard Yahia Ibn Omar"
+   }
+  },
+  "intended": {
+   "road_class": "urbain_principal",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "urbain_secondaire",
+   "road_type": "urbain_secondaire",
+   "road_ref": null,
+   "region": "Sousse",
+   "municipality": "Sousse"
+  }
+ },
+ {
+  "name": "Avenue Hédi Chaker, Sfax",
+  "lat": 34.7379,
+  "lon": 10.76,
+  "nominatim": {
+   "lat": "34.7376548",
+   "lon": "10.7602161",
+   "category": "highway",
+   "type": "steps",
+   "addresstype": "road",
+   "name": "Escalier Dimassi",
+   "display_name": "Escalier Dimassi, Sfax El Jadida, Sfax, La Médina, Délégation Sfax Ville, Gouvernorat Sfax, 3000, Tunisie",
+   "address": {
+    "road": "Escalier Dimassi",
+    "suburb": "Sfax El Jadida",
+    "city": "Sfax",
+    "county": "La Médina",
+    "state_district": "Délégation Sfax Ville",
+    "state": "Gouvernorat Sfax",
+    "ISO3166-2-lvl4": "TN-61",
+    "postcode": "3000",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "name": "مدارج الديماسي",
+    "name:ar": "مدارج الديماسي",
+    "name:fr": "Escalier Dimassi"
+   }
+  },
+  "intended": {
+   "road_class": "urbain_principal",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "urbain_secondaire",
+   "road_type": "urbain_secondaire",
+   "road_ref": null,
+   "region": "Sfax",
+   "municipality": "Sfax"
+  }
+ },
+ {
+  "name": "Avenue Habib Bourguiba, Bizerte (RN11)",
+  "lat": 37.2681664,
+  "lon": 9.8618981,
+  "nominatim": {
+   "lat": "37.2681664",
+   "lon": "9.8618981",
+   "category": "highway",
+   "type": "primary",
+   "addresstype": "primary",
+   "name": "Avenue Habib Bourguiba",
+   "display_name": "Avenue Habib Bourguiba, Bizerte, Boubaker Bakir, Délégation Bizerte Nord, Gouvernorat Bizerte, 7061, Tunisie",
+   "address": {
+    "road": "Avenue Habib Bourguiba",
+    "city": "Bizerte",
+    "county": "Boubaker Bakir",
+    "state_district": "Délégation Bizerte Nord",
+    "state": "Gouvernorat Bizerte",
+    "ISO3166-2-lvl4": "TN-23",
+    "postcode": "7061",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "ref": "RN11",
+    "name": "شارع الحبيب بورقيبة",
+    "name:ar": "شارع الحبيب بورقيبة",
+    "name:fr": "Avenue Habib Bourguiba"
+   }
+  },
+  "intended": {
+   "road_class": "national",
+   "office_kind": "DGPC"
+  },
+  "expected": {
+   "road_class": "national",
+   "road_type": "urbain_principal",
+   "road_ref": "RN11",
+   "region": "Bizerte",
+   "municipality": "Bizerte"
+  }
+ },
+ {
+  "name": "Avenue Habib Bourguiba, Menzel Abderrahmen",
+  "lat": 37.2369568,
+  "lon": 9.8627493,
+  "nominatim": {
+   "lat": "37.2369568",
+   "lon": "9.8627493",
+   "category": "highway",
+   "type": "tertiary",
+   "addresstype": "tertiary",
+   "name": "Avenue Habib Bourguiba",
+   "display_name": "Avenue Habib Bourguiba, Menzel Abderrahmane, Menzel Abderrahmane Est, Délégation Menzel Jemil, Gouvernorat Bizerte, 7035, Tunisie",
+   "address": {
+    "road": "Avenue Habib Bourguiba",
+    "village": "Menzel Abderrahmane",
+    "county": "Menzel Abderrahmane Est",
+    "state_district": "Délégation Menzel Jemil",
+    "state": "Gouvernorat Bizerte",
+    "ISO3166-2-lvl4": "TN-23",
+    "postcode": "7035",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "name": "Avenue Habib Bourguiba",
+    "alt_name": "شارع 2 مارس 1934",
+    "alt_name:ar": "شارع 2 مارس 1934",
+    "alt_name:fr": "Avenue du 2 Mars 1934"
+   }
+  },
+  "intended": {
+   "road_class": "urbain_secondaire",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "urbain_secondaire",
+   "road_type": "urbain_secondaire",
+   "road_ref": null,
+   "region": "Bizerte",
+   "municipality": "Menzel Abderrahmane"
+  }
+ },
+ {
+  "name": "RN3 near Bir Mcherga",
+  "lat": 36.5299515,
+  "lon": 9.9869744,
+  "nominatim": {
+   "lat": "36.5299515",
+   "lon": "9.9869744",
+   "category": "highway",
+   "type": "trunk",
+   "addresstype": "trunk",
+   "name": "RN3",
+   "display_name": "RN3, Jbel Oust, Délégation Bir Mcherga, Gouvernorat Zaghouan, 1141, Tunisie",
+   "address": {
+    "road": "RN3",
+    "county": "Jbel Oust",
+    "state_district": "Délégation Bir Mcherga",
+    "state": "Gouvernorat Zaghouan",
+    "ISO3166-2-lvl4": "TN-22",
+    "postcode": "1141",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "ref": "RN3"
+   }
+  },
+  "intended": {
+   "road_class": "national",
+   "office_kind": "DGPC"
+  },
+  "expected": {
+   "road_class": "national",
+   "road_type": "rural",
+   "road_ref": "RN3",
+   "region": "Zaghouan",
+   "municipality": null
+  }
+ },
+ {
+  "name": "A1 motorway near Bouficha",
+  "lat": 36.3382779,
+  "lon": 10.4865003,
+  "nominatim": {
+   "lat": "36.3382779",
+   "lon": "10.4865003",
+   "category": "highway",
+   "type": "motorway",
+   "addresstype": "motorway",
+   "name": "Autoroute Tunis - Sousse - Sfax",
+   "display_name": "Autoroute Tunis - Sousse - Sfax, Sidi Mtir, Délégation Bouficha, Gouvernorat Sousse, 8052, Tunisie",
+   "address": {
+    "road": "Autoroute Tunis - Sousse - Sfax",
+    "county": "Sidi Mtir",
+    "state_district": "Délégation Bouficha",
+    "state": "Gouvernorat Sousse",
+    "ISO3166-2-lvl4": "TN-51",
+    "postcode": "8052",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "ref": "A1",
+    "name": "الطريق السريعة تونس - سوسة - صفاقس",
+    "int_ref": "TAH 1",
+    "name:ar": "الطريق السريعة تونس - سوسة - صفاقس",
+    "name:en": "Motorway Tunis - Sousse - Sfax",
+    "name:fr": "Autoroute Tunis - Sousse - Sfax"
+   }
+  },
+  "intended": {
+   "road_class": "autoroute",
+   "office_kind": "Ministry of Equipment"
+  },
+  "expected": {
+   "road_class": "autoroute",
+   "road_type": "autoroute",
+   "road_ref": "A1",
+   "region": "Sousse",
+   "municipality": null
+  }
+ },
+ {
+  "name": "RR74E near Testour",
+  "lat": 36.4468918,
+  "lon": 9.3764175,
+  "nominatim": {
+   "lat": "36.4468918",
+   "lon": "9.3764175",
+   "category": "highway",
+   "type": "unclassified",
+   "addresstype": "unclassified",
+   "name": "RR 74E طج",
+   "display_name": "RR 74E طج, Ain Younes, Délégation Testour, Gouvernorat Béja, Tunisie",
+   "address": {
+    "road": "RR 74E طج",
+    "county": "Ain Younes",
+    "state_district": "Délégation Testour",
+    "state": "Gouvernorat Béja",
+    "ISO3166-2-lvl4": "TN-31",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "ref": "RR 74E طج"
+   }
+  },
+  "intended": {
+   "road_class": "regional",
+   "office_kind": "DGPC"
+  },
+  "expected": {
+   "road_class": "regional",
+   "road_type": "rural",
+   "road_ref": "RR 74E طج",
+   "region": "Béja",
+   "municipality": null
+  }
+ },
+ {
+  "name": "Farm track near Mornag",
+  "lat": 36.66,
+  "lon": 10.3,
+  "nominatim": {
+   "lat": "36.6602545",
+   "lon": "10.2998921",
+   "category": "highway",
+   "type": "residential",
+   "addresstype": "residential",
+   "name": "",
+   "display_name": "Mornag, Délégation Mornag, Gouvernorat Ben Arous, 2090, Tunisie",
+   "address": {
+    "county": "Mornag",
+    "state_district": "Délégation Mornag",
+    "state": "Gouvernorat Ben Arous",
+    "ISO3166-2-lvl4": "TN-13",
+    "postcode": "2090",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": null
+  },
+  "intended": {
+   "road_class": "piste",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "rural",
+   "road_type": "rural",
+   "road_ref": null,
+   "region": "Ben Arous",
+   "municipality": null
+  }
+ },
+ {
+  "name": "Gabès centre",
+  "lat": 33.8815,
+  "lon": 10.0982,
+  "nominatim": {
+   "lat": "33.8815224",
+   "lon": "10.0981846",
+   "category": "highway",
+   "type": "tertiary",
+   "addresstype": "tertiary",
+   "name": "Avenue Mohamed Ali",
+   "display_name": "Avenue Mohamed Ali, Secteur 3, Délégation Gabès Ville, Gouvernorat Gabès, 6001, Tunisie",
+   "address": {
+    "road": "Avenue Mohamed Ali",
+    "county": "Secteur 3",
+    "state_district": "Délégation Gabès Ville",
+    "state": "Gouvernorat Gabès",
+    "ISO3166-2-lvl4": "TN-81",
+    "postcode": "6001",
+    "country": "Tunisie",
+    "country_code": "tn"
+   },
+   "namedetails": {
+    "name": "شارع محمد علي",
+    "name:ar": "شارع محمد علي",
+    "name:fr": "Avenue Mohamed Ali"
+   }
+  },
+  "intended": {
+   "road_class": "urbain_secondaire",
+   "office_kind": "Municipality"
+  },
+  "expected": {
+   "road_class": "rural",
+   "road_type": "rural",
+   "road_ref": null,
+   "region": "Gabès",
+   "municipality": null
+  }
+ }
+]

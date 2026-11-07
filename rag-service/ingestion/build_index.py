@@ -1,4 +1,4 @@
-"""Idempotent CLI: rules_placeholder/*.yaml + rules_real/*.yaml -> chunks -> embeddings -> Chroma.
+"""Idempotent CLI: rules_real/*.yaml -> chunks -> embeddings -> Chroma.
 
 Usage:
     python -m ingestion.build_index
@@ -21,10 +21,7 @@ from app.retrieval import get_client  # noqa: E402
 from ingestion.chunker import chunk_document  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-RULE_DIRS = [
-    (REPO_ROOT / "rules_real", False),
-    (REPO_ROOT / "rules_placeholder", True),
-]
+RULE_DIRS = [(REPO_ROOT / "rules_real", False)]
 
 
 def load_rule_files() -> list[dict]:

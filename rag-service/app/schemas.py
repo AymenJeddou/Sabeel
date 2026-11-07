@@ -11,6 +11,11 @@ class GenerateRequest(BaseModel):
     lon: float
     score: int = Field(ge=1, le=5)
     road_type: Optional[str] = None
+    # Additive (Sprint 3): the office the Core API routed the pothole to and its
+    # address, so the sheet names the real recipient.
+    office_name: Optional[str] = Field(default=None, max_length=200)
+    address: Optional[str] = Field(default=None, max_length=300)
+    jurisdiction: Optional[str] = Field(default=None, pattern="^(municipal|state)$")
 
 
 class RuleCitation(BaseModel):
@@ -23,6 +28,7 @@ class GenerateResponse(BaseModel):
     sheet_text: str
     rule_citations: list[RuleCitation]
     target_office: str
+    target_office_label: str = ""  # French label for the UI (issue #11)
     road_type: str
     generated_at: str
     generation_ms: float

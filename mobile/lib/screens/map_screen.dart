@@ -1,15 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app/brand.dart';
-import '../config.dart';
 import '../models/remote_report.dart';
+import '../services/api_client.dart';
+import '../services/location_service.dart';
+import '../services/rules.dart';
 import '../services/sabeel_data.dart';
+import '../widgets/status_tracker.dart';
 
-/// The Carte tab (mobile/design/map.png): every known pothole in the city
-/// from the Core API, coloured by severity, plus this phone's reports still
-/// waiting to upload (navy). Tap a pin for its photo and status.
+/// The Carte tab (issue #32): the real, deduplicated potholes of the visible
+/// area from GET /map (reloaded 400 ms after the map stops moving), clustered
+/// so 5,000+ points stay smooth, severity / status filters, the last result
+/// kept offline, and one-tap "I see it too" actions behind a 50 m geofence.
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key, required this.data});
 
@@ -19,26 +26,39 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
+enum _Filter { open, urgent, fixed }
+
 class _MapScreenState extends State<MapScreen> {
   static const _tunisCenter = LatLng(36.8065, 10.1815);
-  static const _minZoom = 3.0;
-  static const _maxZoom = 18.0;
-
   final MapController _mapController = MapController();
-  bool _showFixed = false;
+  Timer? _debounce;
+  _Filter _filter = _Filter.open;
+  double _zoom = 13;
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _mapController.dispose();
     super.dispose();
   }
 
-  void _zoomBy(double delta) {
-    final camera = _mapController.camera;
-    _mapController.move(
-      camera.center,
-      (camera.zoom + delta).clamp(_minZoom, _maxZoom),
+  void _scheduleLoad() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), _load);
+  }
+
+  Future<void> _load() async {
+    final b = _mapController.camera.visibleBounds;
+    await widget.data.loadMap(
+      bbox: '${b.west},${b.south},${b.east},${b.north}',
+      state: _filter == _Filter.fixed ? 'fixed' : 'open',
+      sev: _filter == _Filter.urgent ? '4,5' : null,
     );
+  }
+
+  void _setFilter(_Filter f) {
+    setState(() => _filter = f);
+    _load();
   }
 
   @override
@@ -46,24 +66,25 @@ class _MapScreenState extends State<MapScreen> {
     return ListenableBuilder(
       listenable: widget.data,
       builder: (context, _) {
-        final reports = widget.data.queue.queue;
-        final potholes =
-            widget.data.potholes
-                .where((p) => p.isOpen || (_showFixed && p.status == 'fixed'))
-                .toList()
-              // Most severe drawn last, i.e. on top.
-              ..sort((a, b) => (a.score ?? 0).compareTo(b.score ?? 0));
-        const initialCenter = _tunisCenter;
-
+        final potholes = widget.data.potholes;
+        final mine = {for (final r in widget.data.queue.queue) r.potholeId};
+        final clusters = clusterIndices([
+          for (final p in potholes) (p.lat, p.lon),
+        ], _zoom);
         return Stack(
           children: [
             FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                initialCenter: initialCenter,
+                initialCenter: _tunisCenter,
                 initialZoom: 13,
-                minZoom: _minZoom,
-                maxZoom: _maxZoom,
+                minZoom: 5,
+                maxZoom: 19,
+                onMapReady: _load,
+                onPositionChanged: (camera, hasGesture) {
+                  if (camera.zoom != _zoom) setState(() => _zoom = camera.zoom);
+                  _scheduleLoad();
+                },
               ),
               children: [
                 TileLayer(
@@ -72,311 +93,336 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 MarkerLayer(
                   markers: [
-                    for (final p in potholes)
-                      Marker(
-                        point: LatLng(p.lat, p.lon),
-                        width: 18.0 + p.clusterSize.clamp(1, 5) * 3,
-                        height: 18.0 + p.clusterSize.clamp(1, 5) * 3,
-                        child: GestureDetector(
-                          onTap: () => showPotholeSheet(context, p),
-                          child: _ReportMarker(
-                            color: p.status == 'fixed'
-                                ? sabeelTeal
-                                : severityColor(p.score),
-                          ),
-                        ),
-                      ),
-                    for (final report in reports)
-                      Marker(
-                        point: LatLng(report.draft.lat, report.draft.lon),
-                        width: 22,
-                        height: 22,
-                        child: const _ReportMarker(color: sabeelNavy),
-                      ),
+                    for (final c in clusters)
+                      if (c.length == 1)
+                        _potholeMarker(
+                          potholes[c.first],
+                          mine.contains(potholes[c.first].potholeId),
+                        )
+                      else
+                        _clusterMarker([for (final i in c) potholes[i]]),
                   ],
+                ),
+                const RichAttributionWidget(
+                  attributions: [TextSourceAttribution('OpenStreetMap')],
                 ),
               ],
             ),
-            const Positioned(top: 12, left: 12, child: _LegendCard()),
-            Positioned(
-              bottom: 16,
-              left: 12,
-              child: FilterChip(
-                label: Text(
-                  '${potholes.length} nids-de-poule · afficher réparés',
-                  style: const TextStyle(fontSize: 12),
-                ),
-                selected: _showFixed,
-                onSelected: (v) => setState(() => _showFixed = v),
-                backgroundColor: Colors.white,
-                selectedColor: sabeelTeal.withValues(alpha: 0.15),
-                side: const BorderSide(color: sabeelLine),
-              ),
-            ),
             Positioned(
               top: 12,
+              left: 12,
               right: 12,
-              child: Column(
+              child: Row(
                 children: [
-                  _MapButton(icon: Icons.add, onTap: () => _zoomBy(1)),
-                  const SizedBox(height: 8),
-                  _MapButton(icon: Icons.remove, onTap: () => _zoomBy(-1)),
+                  for (final (f, label) in [
+                    (_Filter.open, 'Ouverts'),
+                    (_Filter.urgent, 'Urgents'),
+                    (_Filter.fixed, 'Réparés'),
+                  ]) ...[
+                    ChoiceChip(
+                      label: Text(label),
+                      selected: _filter == f,
+                      onSelected: (_) => _setFilter(f),
+                      selectedColor: sabeelNavy,
+                      labelStyle: TextStyle(
+                        color: _filter == f ? Colors.white : sabeelInk,
+                      ),
+                      showCheckmark: false,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  const Spacer(),
+                  if (widget.data.mapOffline)
+                    const Chip(
+                      label: Text('données hors ligne'),
+                      backgroundColor: Color(0xFFFBF1DE),
+                    ),
                 ],
               ),
             ),
-            const Positioned(bottom: 6, right: 8, child: _Attribution()),
+            const Positioned(left: 12, bottom: 12, child: _Legend()),
           ],
         );
       },
     );
   }
-}
 
-class _ReportMarker extends StatelessWidget {
-  const _ReportMarker({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x40000000),
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Required by the OpenStreetMap tile usage policy.
-class _Attribution extends StatelessWidget {
-  const _Attribution();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: Colors.white70,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: const Text(
-        '© OpenStreetMap',
-        style: TextStyle(fontSize: 10, color: Colors.black87),
-      ),
-    );
-  }
-}
-
-class _LegendCard extends StatelessWidget {
-  const _LegendCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: sabeelLine),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'SÉVÉRITÉ',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-              color: sabeelMuted,
+  Marker _potholeMarker(MapPothole p, bool isMine) {
+    final color = p.status == 'fixed' ? Colors.grey : severityColor(p.severity);
+    return Marker(
+      point: LatLng(p.lat, p.lon),
+      width: 30,
+      height: 30,
+      child: GestureDetector(
+        onTap: () => showPotholeSheet(context, widget.data, p),
+        child: Semantics(
+          button: true,
+          label: 'Nid-de-poule ${p.ref}, sévérité ${p.severity ?? 'inconnue'}',
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color,
+              border: Border.all(
+                color: isMine ? sabeelNavy : Colors.white,
+                width: isMine ? 4 : 2.5,
+              ),
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 4),
+              ],
             ),
           ),
-          SizedBox(height: 6),
-          _LegendRow(color: Color(0xFFC8322B), label: 'Urgent (5)'),
-          SizedBox(height: 4),
-          _LegendRow(color: Color(0xFFE36A1B), label: 'Grave (4)'),
-          SizedBox(height: 4),
-          _LegendRow(color: Color(0xFFE0A21A), label: 'Modéré (3)'),
-          SizedBox(height: 4),
-          _LegendRow(color: Color(0xFF3E9E6B), label: 'Mineur (1-2)'),
-          SizedBox(height: 4),
-          _LegendRow(color: Color(0xFF8A8F98), label: 'À évaluer'),
-          SizedBox(height: 4),
-          _LegendRow(color: sabeelNavy, label: "En attente d'envoi"),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Marker _clusterMarker(List<MapPothole> group) {
+    final worst = group
+        .map((p) => p.severity ?? 0)
+        .reduce((a, b) => a > b ? a : b);
+    final lat = group.map((p) => p.lat).reduce((a, b) => a + b) / group.length;
+    final lon = group.map((p) => p.lon).reduce((a, b) => a + b) / group.length;
+    final size = 34.0 + (group.length.clamp(2, 200) / 200) * 24;
+    return Marker(
+      point: LatLng(lat, lon),
+      width: size,
+      height: size,
+      child: GestureDetector(
+        onTap: () => _mapController.move(LatLng(lat, lon), _zoom + 2),
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: severityColor(
+              worst == 0 ? null : worst,
+            ).withValues(alpha: 0.9),
+            border: Border.all(color: Colors.white, width: 3),
+          ),
+          child: Text(
+            '${group.length}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _LegendRow extends StatelessWidget {
-  const _LegendRow({required this.color, required this.label});
-
-  final Color color;
-  final String label;
+class _Legend extends StatelessWidget {
+  const _Legend();
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        for (final (s, label) in [
+          (5, '5'),
+          (4, '4'),
+          (3, '3'),
+          (1, '1–2'),
+        ]) ...[
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: severityColor(s),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(fontSize: 12)),
+          const SizedBox(width: 10),
+        ],
+        const Text(
+          '◉ les vôtres',
+          style: TextStyle(fontSize: 12, color: sabeelNavy),
         ),
       ],
-    );
-  }
-}
-
-class _MapButton extends StatelessWidget {
-  const _MapButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      elevation: 2,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Icon(icon, size: 20),
-        ),
-      ),
-    );
-  }
-}
-
-/// Photo, place and progress of one pothole (map pins and "Mes Rapports").
-void showPotholeSheet(BuildContext context, RemoteReport p) {
-  showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    backgroundColor: Colors.white,
-    builder: (context) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (p.photoUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  '$apiBaseUrl${p.photoUrl}',
-                  height: 170,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                ),
-              ),
-            const SizedBox(height: 14),
-            Text(
-              p.address ??
-                  '${p.lat.toStringAsFixed(5)}, ${p.lon.toStringAsFixed(5)}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              [
-                p.ref,
-                p.score == null
-                    ? 'Sévérité à évaluer'
-                    : 'Sévérité ${p.score}/5',
-                '${p.clusterSize} signalement${p.clusterSize > 1 ? 's' : ''}',
-              ].join(' · '),
-              style: const TextStyle(color: sabeelMuted),
-            ),
-            const SizedBox(height: 16),
-            StatusTracker(status: p.status),
-          ],
-        ),
-      ),
     ),
   );
 }
 
-/// Reçu -> Confirmé -> Transmis -> Réparé (mobile/design/reports.png).
-class StatusTracker extends StatelessWidget {
-  const StatusTracker({super.key, required this.status});
+/// Bottom sheet for one pothole: details, tracker, and the citizen actions.
+void showPotholeSheet(BuildContext context, SabeelData data, MapPothole p) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    backgroundColor: Colors.white,
+    builder: (_) => SafeArea(
+      child: _PotholeSheet(data: data, pothole: p),
+    ),
+  );
+}
 
-  final String status;
+class _PotholeSheet extends StatefulWidget {
+  const _PotholeSheet({required this.data, required this.pothole});
 
-  static const _steps = ['new', 'confirmed', 'sheet_sent', 'fixed'];
+  final SabeelData data;
+  final MapPothole pothole;
+
+  @override
+  State<_PotholeSheet> createState() => _PotholeSheetState();
+}
+
+class _PotholeSheetState extends State<_PotholeSheet> {
+  static const _doneKey = 'confirmations_sent';
+  String? _blocked = 'Localisation…';
+  LocationSnapshot? _fix;
+  bool _busy = false;
+  String? _message;
+  Set<String> _done = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _locate();
+    SharedPreferences.getInstance().then(
+      (p) => setState(() => _done = (p.getStringList(_doneKey) ?? []).toSet()),
+    );
+  }
+
+  Future<void> _locate() async {
+    try {
+      final fix = await const LocationService().captureSnapshot();
+      final p = widget.pothole;
+      if (!mounted) return;
+      setState(() {
+        _fix = fix;
+        _blocked = geofenceReason(
+          distanceM(fix.lat, fix.lon, p.lat, p.lon),
+          fix.gpsAccuracyM,
+        );
+      });
+    } on LocationServiceException catch (e) {
+      if (mounted) setState(() => _blocked = e.message);
+    }
+  }
+
+  Future<void> _send(String kind) async {
+    final fix = _fix;
+    if (fix == null) return;
+    setState(() => _busy = true);
+    try {
+      final r = await widget.data.api.confirm(
+        potholeId: widget.pothole.potholeId,
+        kind: kind,
+        lat: fix.lat,
+        lon: fix.lon,
+        accuracyM: fix.gpsAccuracyM,
+      );
+      final prefs = await SharedPreferences.getInstance();
+      _done.add('${widget.pothole.potholeId}:$kind');
+      await prefs.setStringList(_doneKey, _done.toList());
+      setState(
+        () => _message = r.created
+            ? 'Merci ! ${r.status == 'confirmed' ? 'Le nid-de-poule est maintenant confirmé.' : 'Votre retour est enregistré.'}'
+            : 'Déjà confirmé depuis ce téléphone.',
+      );
+    } on ApiClientException catch (e) {
+      setState(
+        () => _message = switch (e.statusCode) {
+          403 => e.message,
+          409 => 'Action impossible dans l’état actuel du nid-de-poule.',
+          429 => 'Trop de confirmations aujourd’hui, réessayez demain.',
+          _ => e.message,
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (status == 'rejected') {
-      return const Text(
-        "Classé : ce n'était pas un nid-de-poule.",
-        style: TextStyle(color: sabeelMuted, fontStyle: FontStyle.italic),
-      );
-    }
-    final reached = _steps.indexOf(status);
-    final color = statusColors[status] ?? sabeelNavy;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var i = 0; i < _steps.length; i++) ...[
-          if (i > 0)
-            Expanded(
-              child: Container(
-                height: 3,
-                margin: const EdgeInsets.only(top: 10),
-                color: i <= reached ? color : sabeelLine,
+    final p = widget.pothole;
+    final days = DateTime.now().difference(p.createdOn).inDays;
+    final actions = p.status == 'fixed'
+        ? [
+            ('not_fixed', 'Toujours là', Icons.report_outlined),
+            ('fixed_ok', 'Bien réparé', Icons.thumb_up_alt_outlined),
+          ]
+        : [('seen', 'Je le vois aussi', Icons.visibility_outlined)];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            p.addressLabel ??
+                '${p.lat.toStringAsFixed(5)}, ${p.lon.toStringAsFixed(5)}',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            [
+              p.ref,
+              p.severity == null
+                  ? 'Sévérité à évaluer'
+                  : 'Sévérité ${p.severity}/5',
+              '${p.reportCount} signalement${p.reportCount > 1 ? 's' : ''}',
+              '${p.confirmCount} « je le vois aussi »',
+              days == 0 ? 'aujourd’hui' : 'il y a $days j',
+            ].join(' · '),
+            style: const TextStyle(color: sabeelMuted),
+          ),
+          const SizedBox(height: 16),
+          StatusTracker(status: p.status),
+          const SizedBox(height: 16),
+          for (final (kind, label, icon) in actions) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed:
+                    _busy ||
+                        _blocked != null ||
+                        _done.contains('${p.potholeId}:$kind')
+                    ? null
+                    : () => _send(kind),
+                icon: Icon(icon),
+                label: Text(
+                  _done.contains('${p.potholeId}:$kind')
+                      ? 'Déjà confirmé'
+                      : label,
+                ),
               ),
             ),
-          Column(
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: i <= reached ? color : Colors.white,
-                  border: Border.all(
-                    color: i <= reached ? color : sabeelLine,
-                    width: 2,
-                  ),
-                ),
-                child: i <= reached
-                    ? const Icon(Icons.check, size: 13, color: Colors.white)
-                    : null,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                statusLabels[_steps[i]]!,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: i == reached ? FontWeight.w700 : FontWeight.w500,
-                  color: i <= reached ? sabeelInk : sabeelMuted,
-                ),
-              ),
-            ],
+            const SizedBox(height: 8),
+          ],
+          TextButton.icon(
+            onPressed:
+                _busy ||
+                    _blocked != null ||
+                    _done.contains('${p.potholeId}:not_pothole')
+                ? null
+                : () => _send('not_pothole'),
+            icon: const Icon(Icons.block, size: 18),
+            label: const Text('Pas un nid-de-poule'),
           ),
+          if (_blocked != null)
+            Text(
+              _blocked!,
+              style: const TextStyle(color: sabeelMuted, fontSize: 12),
+            ),
+          if (_message != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _message!,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
         ],
-      ],
+      ),
     );
   }
 }

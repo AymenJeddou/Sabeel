@@ -32,7 +32,7 @@ def collection_count() -> int:
         return 0
 
 
-def retrieve_chunks(road_type: str, score: int, top_k: int = None) -> list[dict[str, Any]]:
+def retrieve_chunks(road_type: str, score: int, top_k: int = None, jurisdiction: str | None = None) -> list[dict[str, Any]]:
     """Embed a synthetic query, search Chroma, apply the similarity floor.
 
     Returns a list of {"id", "document", "metadata", "similarity"} dicts,
@@ -43,19 +43,34 @@ def retrieve_chunks(road_type: str, score: int, top_k: int = None) -> list[dict[
     if collection.count() == 0:
         return []
 
-    query_text = f"nid de poule sévérité {score} route {road_type}"
+    # The query names what a sheet needs at this severity: who owns the road,
+    # the repair method, and (for dangerous ones) urgency and signage.
+    method = (
+        "réparation semi-permanente, découpe des bords, compactage" if score >= 3
+        else "colmatage rapide à l'enrobé à froid, déposer et compacter"
+    )
+    urgency = ", urgence, signalisation et sécurité" if score >= 4 else ""
+    query_text = f"nid de poule sévérité {score} route {road_type} : domaine routier responsable, {method}{urgency}"
     query_vec = embed([query_text])
 
+    # Rules for this road type plus the general repair methods ("all"),
+    # limited to rules that apply at this severity.
     results = collection.query(
         query_embeddings=query_vec,
         n_results=min(top_k, collection.count()),
-        where={"road_type": road_type},
+        where={"$and": [
+            {"road_type": {"$in": [road_type, "all"]}},
+            {"severity_min": {"$lte": int(score)}},
+            # When the Core API knows who owns the road (from OSM), only that
+            # owner's legal rules (plus the method rules) are shown.
+            {"jurisdiction": {"$in": [jurisdiction, "any"] if jurisdiction else ["municipal", "state", "any"]}},
+        ]},
     )
 
     hits = _extract_hits(results)
 
     if len(hits) < 2:
-        # Broaden: drop the road_type filter, take the best 5 overall.
+        # Broaden: drop the filters, take the best 5 overall.
         results = collection.query(
             query_embeddings=query_vec,
             n_results=min(config.TOP_K_RETRIEVE, collection.count()),

@@ -6,10 +6,11 @@ ml-training/ itself (not its parent) must be on sys.path.
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 ML_TRAINING_DIR = REPO_ROOT / "ml-training"
@@ -22,16 +23,26 @@ os.environ.setdefault("MODEL_PATH", str(ML_TRAINING_DIR / "models" / "pothole_mo
 import inference as _vision_inference  # noqa: E402
 
 
-def run_inference(photo_bytes: bytes) -> dict[str, Any]:
-    """Returns {"score": Optional[int], "confidence": Optional[float], "boxes": [...], "inference_ms": float}.
-
-    score/confidence are None when nothing is detected -- callers must treat
-    them as Optional, never assume a plain int/float (Section 4.3 documents
-    plain int/float, but the actual implementation returns None on no
-    detection; this has been true since Sprint 1).
-    """
-    return _vision_inference.infer(photo_bytes)
+def warm_up() -> None:
+    _vision_inference.warm_up()
 
 
-def meets_sheet_threshold(score: Optional[int], threshold: int) -> bool:
-    return score is not None and score >= threshold
+def run_inference(photo_bytes: bytes, source: str = "manual") -> dict[str, Any]:
+    """{"score", "confidence", "boxes", "inference_ms"}; score/confidence are
+    None when nothing is detected. Boxes are normalised to 0-1 of the image so
+    they can be drawn over the (downscaled, anonymised) stored photo."""
+    result = _vision_inference.infer(photo_bytes, source=source)
+    w, h = result.pop("image_size", (1, 1))
+    result["boxes"] = [
+        {"x": b["x"] / w, "y": b["y"] / h, "w": b["w"] / w, "h": b["h"] / h, "conf": b.get("conf")}
+        for b in result["boxes"]
+    ]
+    return result
+
+
+async def run_inference_async(photo_bytes: bytes, source: str = "manual") -> dict[str, Any]:
+    """Same, off the event loop (~240 ms of CPU per photo)."""
+    try:
+        return await asyncio.to_thread(run_inference, photo_bytes, source)
+    except Exception:  # noqa: BLE001 - an undecodable photo is "no detection", not a 500
+        return {"score": None, "confidence": None, "boxes": [], "inference_ms": None}

@@ -7,8 +7,9 @@ import 'support_chat_screen.dart';
 
 /// The Accueil tab (mobile/design/main.png, restyled to the Sabeel brand).
 ///
-/// The stat cards are the city-wide figures from the Core API's GET /stats
-/// (a dash while offline). Driving mode opens the one-tap camera.
+/// The stat cards are the public city-wide figures (GET /public/stats, a dash
+/// while offline). "Signaler" opens the one-tap camera; "Mode conduite" the
+/// hands-free dashcam mode; "Mode détaillé" the GPS/compass preview flow.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
@@ -22,12 +23,14 @@ class HomeScreen extends StatelessWidget {
   Future<void> _openCamera(
     BuildContext context, {
     bool drivingMode = false,
+    bool detailed = false,
   }) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => CameraCaptureScreen(
-          queueRepository: data.queue,
+          data: data,
           drivingMode: drivingMode,
+          detailed: detailed,
         ),
       ),
     );
@@ -50,14 +53,22 @@ class HomeScreen extends StatelessWidget {
                 const _Header(),
                 const SizedBox(height: 20),
                 _CameraCallToAction(onTap: () => _openCamera(context)),
-                const SizedBox(height: 14),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => _openCamera(context, detailed: true),
+                    icon: const Icon(Icons.tune, size: 18),
+                    label: const Text('Mode détaillé (GPS, vitesse, boussole)'),
+                  ),
+                ),
+                const SizedBox(height: 4),
                 IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
                         child: _StatCard(
-                          value: stat('potholes_total'),
+                          value: stat('reported'),
                           label: 'Signalés',
                           icon: Icons.warning_amber_rounded,
                           accent: const Color(0xFFA86F06),

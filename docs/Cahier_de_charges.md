@@ -2,7 +2,7 @@
 
 # CAHIER DES CHARGES
 
-## RoadScan — Pothole Detection & Management System (Tunisia)
+## Sabeel (ex-RoadScan) — Pothole Detection & Management System (Tunisia)
 
 **Projet Fédérateur — Cycle Ingénieur (CI3)**
 
@@ -11,8 +11,8 @@
 | | |
 |---|---|
 | **Document** | Cahier des charges (functional & technical specification) |
-| **Version** | 5.0 — aligned with the repository structure |
-| **Date** | September 2026 |
+| **Version** | 6.0 — Sprint 3-4 complete: implementation status, decisions and measured results |
+| **Date** | November 2026 |
 | **Duration** | 4 weeks (4 one-week sprints) |
 | **Budget** | 0 TND — free-tier services only |
 | **Team** | Aymen Jeddou · Tharaa Oueslati · Jasseur Chibani · Jed Belhaj Mohamed |
@@ -29,6 +29,7 @@
 |---|---|---|
 | 4.0 | Sept 2026 | Initial "simple version" of the specification |
 | 5.0 | Sept 2026 | Restructured to mirror the repository (work packages WP1–WP4, WP-T); architecture decisions taken during Sprint 1 recorded (RAG as separate service, `manual` / `driving_mode` sources, contracts frozen); UML diagrams added; implementation status added for every feature |
+| 6.0 | Nov 2026 | Sprint 3-4 roadmap (#19) implemented: potholes as entities, trust layer and officer auth, OSM routing, background sheet jobs with officer approval, SLA and escalation, web dashboard, public page and PWA, mobile reliability and driving mode. Statuses, API table, measured targets, decisions AD-9 to AD-18 and open points updated |
 
 **How to read the status markers used throughout this document**
 
@@ -100,7 +101,7 @@ RoadScan combines the low cost of crowd reporting, the automatic grading of AI d
 | # | Objective | Description |
 |---|---|---|
 | O1 | **Capture** | Obtain a photo (citizen) or a video frame (driving phone) with GPS, heading and speed |
-| O2 | **Detect** | Detect potholes and grade severity 1–5 with an open YOLOv8n model running on CPU |
+| O2 | **Detect** | Detect potholes and grade severity 1–5 with an open YOLO model (YOLO11s since Sprint 2) running on CPU |
 | O3 | **Write the sheet** | Turn a confirmed serious pothole into a work order through a RAG agent grounded on real texts |
 | O4 | **Show the map** | Display all reports on one live map, merged by proximity and prioritised |
 
@@ -167,12 +168,12 @@ Six features (F1–F6) are specified below. Each has a user story, functional ru
 
 | ID | Feature | Owner WP | Status |
 |---|---|---|---|
-| F1 | Photo capture & report | WP4 (app), WP1 (score), WP3 (API) | 🟡 Partial |
-| F2 | Map with filters & deduplication | WP3, WP4 | 🟡 Partial |
-| F3 | Work-sheet generation (RAG) | WP2, WP3 | 🟡 Partial |
-| F4 | Priority list & status workflow | WP3, WP4 | 🟡 Partial |
-| F5 | Citizen feedback on own reports | WP4, WP3 | 🟡 Partial |
-| F6 | Hands-free driving mode | WP4, WP1 | ⬜ Planned |
+| F1 | Photo capture & report | WP4 (app), WP1 (score), WP3 (API) | ✅ Done (app, web PWA) |
+| F2 | Map with filters & deduplication | WP3, WP4 | ✅ Done |
+| F3 | Work-sheet generation (RAG) | WP2, WP3 | ✅ Done (LLM provider: see OP-6) |
+| F4 | Priority list & status workflow | WP3, WP4 | ✅ Done |
+| F5 | Citizen feedback on own reports | WP4, WP3 | ✅ Done |
+| F6 | Hands-free driving mode | WP4, WP1 | ✅ Done, field test pending |
 
 ### 5.2 F1 — Photo capture and report
 
@@ -203,7 +204,7 @@ Six features (F1–F6) are specified below. Each has a user story, functional ru
 3. An offline report is delivered after connectivity returns, exactly once.
 4. Open app → report sent takes less than 15 s.
 
-**Status:** 🟡 capture screens, preview, result screen, GPS/heading reading and the offline-queue repository exist in [`mobile/lib`](../mobile/lib); the API stores reports and runs ONNX inference ([`backend/app/routers/reports.py`](../backend/app/routers/reports.py)). Automatic queue flushing on reconnection is still to be wired.
+**Status:** ✅ One-tap capture (GPS and compass started with the camera, 5 s undo, blur check) and a detailed mode in the app; the same report from any phone browser (PWA, `source = web`). Every report is stored on the phone and retried with backoff (30 s, 2 min, 10 min, 1 h) on start, reconnection and every 30 s; `POST /reports` is idempotent on `device_report_id`, so a retry never duplicates. Without a detection the API answers `detected: false` and the citizen chooses "Reprendre" or "Envoyer quand même" (`force=true`). Above 40 km/h nothing is rejected. Measured round trip: 0.4–0.75 s.
 
 ### 5.3 F2 — Map with filters and deduplication
 
@@ -221,7 +222,7 @@ Six features (F1–F6) are specified below. Each has a user story, functional ru
 2. Two reports 30 m apart stay independent.
 3. The map remains fluid with 5,000+ points.
 
-**Status:** 🟡 deduplication ([`dedup.py`](../backend/app/dedup.py)) and `GET /map?bbox=` ([`routers/map.py`](../backend/app/routers/map.py)) are done; map screen with `flutter_map` exists; `sev` / `state` filters and marker clustering are planned.
+**Status:** ✅ Potholes are first-class entities ([`potholes.py`](../backend/app/potholes.py)); a pothole is `confirmed` by **two distinct devices** (reports or "I see it too"), not by two reports from one phone (AD-10). `GET /map` filters `bbox`, `sev`, `state`, `region`, `office`; the app clusters markers on a grid and the dashboard draws on canvas (smooth with 5,045 potholes; every endpoint < 0.3 s).
 
 ### 5.4 F3 — Work-sheet generation (RAG)
 
@@ -245,7 +246,7 @@ Six features (F1–F6) are specified below. Each has a user story, functional ru
 3. A sheet is produced in under 20 s.
 4. A generation failure never blocks report creation: the report stays `confirmed` and is retried.
 
-**Status:** 🟡 pipeline, retrieval, citation guard, fallback template and tests exist under [`rag-service/`](../rag-service); rule corpus currently combines `rules_real` (Law 2018-29 CCL, Law 86-17) with `rules_placeholder` files pending full legal review. Current API integration is a synchronous HTTP call inside `POST /reports`; migration to a background task is planned for Sprint 3.
+**Status:** ✅ The sheet is a background job with retries (AD-12), never in `POST /reports`. The road type and target office come from OpenStreetMap ([`geo/`](../backend/app/geo), verified on 20 real points). The 15 placeholder rules are replaced by real texts: Law 2018-29 art. 69, Law 86-17 and the FHWA pothole-repair manual FHWA-RD-99-168 (repair methods). Retrieval only shows the road owner's law and the method that fits the severity. An officer reviews, edits and approves every sheet (`sheet_sent` = approved, AD-13); the PDF carries a SHA-256 fingerprint and a QR code to verify it.
 
 ### 5.5 F4 — Priority list and status workflow
 
@@ -261,7 +262,7 @@ Six features (F1–F6) are specified below. Each has a user story, functional ru
 2. `PATCH confirmed → sheet_sent` returns 200 and updates `updated_at`.
 3. The exported file contains the same rows as the on-screen filtered list.
 
-**Status:** 🟡 state machine and `PATCH /reports/{report_id}` done with tests ([`status.py`](../backend/app/status.py), [`tests/test_status.py`](../backend/app/tests/test_status.py)). `report_events` history table, per-office queue and export endpoints are planned.
+**Status:** ✅ Officer token login, scoped per office ([`auth.py`](../backend/app/auth.py)); the queue is sorted by an explainable priority score (severity, road class, citizens, age, overdue, reopened, rain; [`priority.py`](../backend/app/priority.py)). Every change is written to `report_events`. `fixed` requires a proof photo that the model re-checks. SLA deadlines (48 h / 7 d / 14 d) with escalation to the parent office. CSV and GeoJSON export match the queue (tested).
 
 ### 5.6 F5 — Citizen feedback
 
@@ -273,7 +274,7 @@ Six features (F1–F6) are specified below. Each has a user story, functional ru
 
 > **Rationale.** All data is donated by citizens; proof that reporting has an effect is the only lasting incentive.
 
-**Status:** 🟡 endpoint done; "My reports" screen exists ([`reports_screen.dart`](../mobile/lib/screens/reports_screen.dart)) on mock data; polling and notification planned.
+**Status:** ✅ "Mes Rapports" lists every report with the 4-step tracker, synced from `GET /devices/{device_id}/reports`; local notifications on confirmed, sent, fixed and reopened. Citizens can also confirm "bien réparé" or "toujours là" on a fixed pothole (two "toujours là" reopen it). A public transparency page shows the aggregate results.
 
 ### 5.7 F6 — Hands-free driving mode
 
@@ -291,7 +292,7 @@ Six features (F1–F6) are specified below. Each has a user story, functional ru
 2. Only confirmed detections are uploaded.
 3. Driving-mode reports appear on the same map as manual ones.
 
-**Status:** ⬜ planned (Sprint 3).
+**Status:** ✅ Implemented ([`camera_capture_screen.dart`](../mobile/lib/screens/camera_capture_screen.dart)): one frame every 1.5 s between 5 and 80 km/h is scored by `POST /detect` (nothing stored, AD-16); three positive frames in a row upload a `driving_mode` report. Known potholes ahead are announced by voice and vibration. The 20-minute heat and battery test remains a field check.
 
 ---
 
@@ -458,17 +459,25 @@ The following contracts are **frozen** (Sprint 1) and shared by every work packa
 
 ### 11.2 REST API
 
-| Route | Purpose | Success | Errors | Status |
-|---|---|---|---|---|
-| `POST /reports` | Create a report (multipart: photo + fields) | `201` `{report_id, device_report_id, status, score, sheet_summary?, target_office?}` | `422` invalid input | ✅ |
-| `GET /reports/{device_report_id}` | Status of a phone's own report | `200` `{report_id, status, score, sheet_summary?}` | `404` unknown id | ✅ |
-| `PATCH /reports/{report_id}` | Move status forward | `200` `{report_id, status, updated_at}` | `404`, `409` non-forward | ✅ |
-| `GET /map?bbox=minLon,minLat,maxLon,maxLat` | Points in viewport | `200` list of `{report_id, lat, lon, score, status, cluster_id}` | `422` bad bbox | ✅ |
-| `GET /map?…&sev=&state=` | Filtered map | as above | | ⬜ |
-| `GET /authorities/{id}/queue` | Sorted list for one office (F4) | `200` list | | ⬜ |
-| `GET /export?format=geojson\|csv` | Download filtered data | file | | ⬜ |
-| `GET /health` | Liveness | `200` | | ✅ |
-| `GET /docs` | OpenAPI documentation (FastAPI) | HTML | | ✅ |
+Full reference: [`backend/app/README.md`](../backend/app/README.md) and the OpenAPI page `/docs`.
+
+| Route | Purpose | Auth | Status |
+|---|---|---|---|
+| `POST /reports` | Create a report (multipart). Idempotent on `device_report_id` (`200` on retry). `detected: false` when the model sees nothing; resend with `force=true` | — | ✅ |
+| `GET /reports/{device_report_id}` | Tracker: status, timeline, office, approved sheet summary | — | ✅ |
+| `GET /devices/{device_id}/reports` | Every report of a phone with its pothole status | — | ✅ |
+| `POST /potholes/{id}/confirmations` | "I see it too", "still there", "well repaired", "not a pothole" (50 m geofence) | — | ✅ |
+| `POST /detect` | Driving mode: score one frame, store nothing | — | ✅ |
+| `GET /map?bbox=&sev=&state=&region=&office=` | Potholes in the viewport | — | ✅ |
+| `GET /public/stats`, `/public/map`, `/public/potholes/{id}[/verify]` | Transparency page, PDF verification | — | ✅ |
+| `GET /authorities/{id or me}/queue` | Sorted office queue with priority components | office | ✅ |
+| `GET /export?format=csv or geojson` | Same rows as the queue | office | ✅ |
+| `GET /potholes/{id}`, `PATCH /potholes/{id}`, `POST /potholes/{id}/fix` | Case file, confirm / reject, mark fixed with proof | office | ✅ |
+| `GET or PATCH /potholes/{id}/sheet`, `POST .../approve`, `.../retry`, `GET .../sheet.pdf` | Work-sheet review and PDF | office | ✅ |
+| `GET /analytics/*`, `GET /authorities/{id}/route`, `GET /weather`, `POST /assistant` | Analytics, repair tour, rain alert, assistant | office | ✅ |
+| `POST /internal/run` | Scheduled jobs, SLA, weather | internal token | ✅ |
+| `PATCH /reports/{report_id}` | Sprint 1 route, kept for old app builds | office | deprecated |
+| `GET /health`, `GET /docs` | Liveness, OpenAPI | — | ✅ |
 
 ### 11.3 Vision interface (WP1 → WP3)
 
@@ -525,6 +534,8 @@ Response: {
 | **WP-T** | Transversal: Docker, CI/CD, contracts | All | — | Dockerfiles, GitHub Actions, `.env.example`, docs |
 
 ### 12.2 Repository layout
+
+> Sprint 1 layout, kept for history. The current layout of each component is in its README (linked from the root README); v6 adds `dashboard/` (web app), `backend/app/db/migrations/`, `backend/app/geo/` and the ML tools.
 
 ```text
 RoadScan/
@@ -637,7 +648,7 @@ Each decision states the constraint, the candidates evaluated (✓ satisfies, �
 | Small file | ✓ | ✗ | ✗ |
 | Sufficient accuracy | ✓ | ✓ | ✓ |
 
-**Selected: YOLOv8n**, exported to **ONNX (opset 12)** and run with ONNX Runtime — light, portable, no PyTorch needed in production.
+**Selected (Sprint 1): YOLOv8n**, exported to **ONNX (opset 12)** and run with ONNX Runtime — light, portable, no PyTorch needed in production. **Sprint 2: replaced by YOLO11s** (#41): far better recall at ~114 ms end to end on a laptop CPU, still under 250 ms. INT8 quantization with a float head (`quantize.py`) gives 1.6–1.8× more speed if a bigger model is needed. See [`MODEL_REPORT.md`](../ml-training/MODEL_REPORT.md).
 
 ### 13.4 Vector store — *0 TND, 15–30 pages of rules*
 
@@ -764,9 +775,9 @@ Chunking is **semantic**: one chunk per article or clause; chunks above 300 word
 ### 14.3 Personal data and privacy
 
 - No name, phone number or account identifier is collected; a report is tied only to the phone's `device_report_id`.
-- Faces and licence plates are blurred before a photo is persisted *(planned)*.
+- Faces and licence plates are blurred and EXIF/GPS metadata stripped before a photo is persisted (OpenCV Haar cascades, best effort).
 - Compliance with **Law 2004-63** on personal data; location data describes the road, not the person's trips.
-- Raw photos are deleted once the sheet is produced *(planned)*; only summary data and the sheet remain.
+- Photos are deleted when the sheet is approved, except the clearest one, kept as a training label (AD-14). Public endpoints never return photos, device ids or exact times (enforced by a test).
 - Driving mode discards empty frames on the device and never stores whole trips.
 
 ---
@@ -796,9 +807,11 @@ Chunking is **semantic**: one chunk per article or clause; chunks above 300 word
 | Unit | Status transitions, GeoJSON/bbox parsing, dedup, citation guard, ISO 8601 helper, queue model | pytest, flutter_test | ✅ |
 | Integration | API ↔ PostGIS ↔ mocked vision / RAG | pytest + pytest-asyncio + httpx | ✅ |
 | Widget | Root navigation shell | flutter_test | ✅ |
-| Model | mAP@50 and latency (`timing_test.py`) | ultralytics, ONNX Runtime | 🟡 |
-| End-to-end | Phone → API → map → sheet | Manual on device | ⬜ |
-| Load | Map with 5,000+ points | Synthetic data | ⬜ |
+| Model | mAP@50 (`evaluate.py`) and latency (`timing_test.py`) | ultralytics, ONNX Runtime | ✅ measured (0.562 / 114 ms) |
+| Web | Request contract, helpers, typecheck, build | Vitest, tsc, Vite | ✅ |
+| End-to-end | Two phones → confirmation → routing → sheet → approval → tracker → PDF/QR → fix with AI check → public stats | `scripts/e2e_smoke.py` | ✅ |
+| Load | 5,000 synthetic potholes (`seed.py --extra 5000`) | timed endpoints | ✅ all < 0.3 s |
+| Field | 15 s report, 20 min driving, Tunisian photos | Manual on device | ⬜ team |
 
 ### 15.4 Deployment
 
@@ -882,15 +895,19 @@ The MVP is accepted when all items below are demonstrated live to the team and s
 | 8 | Monthly infrastructure cost is 0 TND | Billing consoles |
 | 9 | Repository contains code for all WPs, Dockerfiles, API docs, README, model report and this checklist | Repository review |
 
-### Current implementation snapshot (end of Sprint 1 / start of Sprint 2)
+### Implementation snapshot (end of Sprint 4, November 2026)
 
-| Area | Done | Remaining |
+| # | Criterion | Status |
 |---|---|---|
-| WP1 Vision | Training/export pipeline, ONNX model, `inference.py`, severity rule, timing test | Full-scale training to reach 0.75 mAP, model report |
-| WP2 RAG | Pipeline, retrieval, citation guard, fallback, real-law seeds, tests | Complete rule corpus, background integration |
-| WP3 API | Reports/map/status routes, dedup, schema, tests, Dockerfile | `report_events`, queue/export routes, map filters, rate limiting, photo blur/deletion |
-| WP4 Mobile | Screens, GPS/heading, offline-queue model and repository, tests | Queue flushing, real API wiring, notifications, clustering, driving mode |
-| WP-T | Compose stack, CI on 3 jobs, `.env.example`, contracts | Cloud Run deploy workflow, keep-alive |
+| 1 | Photo → dot on the map in < 3 s | ✅ 0.4–0.75 s measured |
+| 2 | Driving mode produces an automatic report | ✅ implemented; field drive to record |
+| 3 | mAP@50 ≥ 0.75 with a written report | ❌ 0.562; report and plan in `MODEL_REPORT.md` |
+| 4 | Sheet cites a real rule, non-empty office | ✅ 15 real rules, citation guard, officer approval |
+| 5 | Map shows, filters, deduplicates in the database | ✅ |
+| 6 | Status flow logged, invalid transition rejected | ✅ `report_events`, 409 |
+| 7 | Push to `main` deploys | ✅ workflow ready; needs the cloud accounts (`DEPLOYMENT.md`) |
+| 8 | 0 TND per month | ✅ free tiers only (LLM: see OP-6) |
+| 9 | Code, Dockerfiles, API docs, README, model report | ✅ |
 
 ---
 
@@ -927,17 +944,17 @@ The RAG service internally uses the road-type categories `urbain_principal`, `ur
 
 | Specification element | Repository evidence | Status |
 |---|---|---|
-| Four components in separate folders | `mobile/`, `backend/`, `ml-training/`, `rag-service/` | ✅ |
-| Contracts and enums (`manual` / `driving_mode`, four statuses) | `backend/app/schemas.py`, `status.py`, `schema.sql` | ✅ |
-| 5 m PostGIS deduplication | `backend/app/dedup.py`, GiST index | ✅ |
-| ONNX YOLOv8n, opset 12 | `ml-training/export_onnx.py`, `models/pothole_model.onnx` | ✅ |
-| RAG with Chroma, top-5, citation guard | `rag-service/app/*` | ✅ |
-| Two Dockerfiles + compose | `Dockerfile`, `rag-service/Dockerfile`, `docker-compose.yml` | ✅ |
-| CI on backend, RAG and mobile | `.github/workflows/ci.yml` | ✅ |
-| Cloud Run auto-deploy | — | ⬜ |
-| `report_events`, `/authorities/{id}/queue`, `/export`, map filters | — | ⬜ |
-| Face/plate blur, photo deletion, rate limiting | — | ⬜ |
-| Driving mode, notifications, marker clustering | — | ⬜ |
+| Four components in separate folders + web app | `mobile/`, `dashboard/`, `backend/`, `ml-training/`, `rag-service/` | ✅ |
+| Contracts and enums (`manual` / `driving_mode` / `web`, statuses incl. `rejected`, `reopened`) | `backend/app/schemas.py`, `status.py`, migrations | ✅ |
+| 5 m PostGIS deduplication, distinct-device confirmation | `backend/app/potholes.py`, GiST index | ✅ |
+| ONNX detector on CPU < 250 ms | `ml-training/`, `MODEL_REPORT.md` | ✅ |
+| RAG with Chroma, citation guard, real rules only | `rag-service/` | ✅ |
+| Two Dockerfiles + compose, migrations on startup | `Dockerfile`, `rag-service/Dockerfile`, `backend/app/migrate.py` | ✅ |
+| CI on backend, RAG, ML, web, mobile; APK build | `.github/workflows/` | ✅ |
+| Cloud Run auto-deploy, keep-alive | `deploy.yml`, `scheduler.yml` | ✅ (accounts to create) |
+| `report_events`, office queue, export, map filters | backend | ✅ |
+| Face/plate blur, EXIF strip, photo deletion, rate limiting | `privacy.py`, sheet approval, `ratelimit.py` | ✅ |
+| Driving mode, notifications, marker clustering | `mobile/` | ✅ |
 
 ### 19.4 Architecture decision records
 
@@ -950,12 +967,31 @@ The RAG service internally uses the road-type categories `urbain_principal`, `ur
 | AD-5 | Semantic (per-article) chunking with 1,200-character cap | Fixed 400-character windows | Preserves legal-clause integrity for citation |
 | AD-6 | Offline queue persisted with `shared_preferences` | `hive` | Fewer dependencies; adequate queue volume |
 | AD-7 | Primary LLM is Llama-3.1-8B-Instruct | Qwen2.5-72B primary | Meets the time budget (72B exceeded 12 s) |
-| AD-8 | Frame rate of driving mode fixed after Sprint 3 test (target 1 fps) | 12 fps | Earlier versions were inconsistent (12 fps vs 1 fps) |
+| AD-8 | Frame rate of driving mode fixed after Sprint 3 test (target 1 fps) | 12 fps | Earlier versions were inconsistent (12 fps vs 1 fps); implemented at one frame every 1.5 s (capture + upload time) |
+| AD-9 | Potholes are a table; reports, confirmations, status, sheet and SLA attach to the pothole | Status on each report | One truth per physical pothole; Sprint 1 rows backfilled by migration 002 |
+| AD-10 | Confirmation needs 2 distinct devices and one detected photo | Any second report within 5 m | One phone can no longer confirm its own report |
+| AD-11 | Officer auth by per-office bearer token (SHA-256 stored) | Accounts and passwords | No personal accounts to manage for the pilot |
+| AD-12 | Sheets and enrichment are background jobs in a Postgres table (`SKIP LOCKED`, backoff), triggered in-process and by a scheduled endpoint | Synchronous call in `POST /reports`; a queue service | < 1 s intake, no lost sheet, 0 TND, works with Cloud Run scale-to-zero |
+| AD-13 | `sheet_sent` means officer-approved; the PDF is fingerprinted | LLM output sent directly | A human signs every order; printed copies are verifiable |
+| AD-14 | Photos deleted at approval except the clearest one (training label) | Delete all | Photos are already blurred; keeps the feedback loop |
+| AD-15 | One Nominatim call for road + region; the legal `ref` (RN/RR) wins over the OSM road shape | Overpass + Nominatim | Fewer calls; Overpass refused from some networks; 20/20 points routed correctly |
+| AD-16 | Driving-mode frames scored on the server (`POST /detect`) | On-device model | Same model as production, no second export (resolves OP-1) |
+| AD-17 | Priority = sum of named points | Product of weights | Components add up to the score, so the dashboard can explain it |
+| AD-18 | Severity bands per capture mode, no confidence bonus | One band set + bonus | 71 % of close-ups scored 5 with v1; v2 spreads 3/5/6/6/4 |
 
 ### 19.5 Open points
 
-| # | Question | Owner | Due |
-|---|---|---|---|
+| # | Question | Status |
+|---|---|---|
+| OP-1 | Driving mode: on-device or server-side detection? | Resolved: server-side (AD-16) |
+| OP-2 | Retry mechanism when RAG fails | Resolved: job table with backoff (AD-12) |
+| OP-3 | Replace placeholder rules by validated texts | Resolved: Law 2018-29, Law 86-17, FHWA manual; a review by a jurist is still recommended |
+| OP-4 | Priority formula and traffic source | Resolved: AD-17, with the OSM road class as the traffic proxy |
+| OP-5 | Law 2018-29 is reported repealed by décret-loi n°4 of 30 Sept 2026, effective after the next municipal elections | Open: update `rules_real/loi_2018_29_ccl.yaml` when the new text is in force |
+| OP-6 | LLM provider: the Hugging Face token has no credits left (402) | Open: choose a Groq / OpenRouter free tier or HF credits; sheets use the rule-only template meanwhile |
+| OP-7 | mAP@50 0.562 vs the 0.75 target | Open: Tunisian test set and error analysis (`MODEL_REPORT.md` §6) |
+
+---|---|---|---|
 | OP-1 | Driving mode: on-device detection or server-side per frame? | WP1 / WP4 | Sprint 3 |
 | OP-2 | Retry mechanism when RAG fails (background task vs scheduled job) | WP3 | Sprint 2 |
 | OP-3 | Replace placeholder rules by validated legal/technical texts | WP2 | Sprint 2 |
@@ -965,7 +1001,7 @@ The RAG service internally uses the road-type categories `urbain_principal`, `ur
 
 <div align="center">
 
-*RoadScan — Pothole Detection & Management System — MVP Tunisia*
+*Sabeel (ex-RoadScan) — Pothole Detection & Management System — Tunisia*
 *A. Jeddou · T. Oueslati · J. Chibani · J. Belhaj Mohamed — September 2026*
 
 </div>
