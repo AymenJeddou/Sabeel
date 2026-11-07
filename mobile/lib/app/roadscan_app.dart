@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../screens/camera_capture_screen.dart' show navigatorKey;
 import '../screens/root_shell.dart';
 import '../screens/splash_screen.dart';
 import '../services/sabeel_data.dart';
@@ -17,6 +18,7 @@ class RoadScanApp extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
     );
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Sabeel',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
