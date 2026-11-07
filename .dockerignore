@@ -1,0 +1,15 @@
+# Keep the Core API image small: only backend/app and the ONNX runtime files are copied.
+.git
+.venv
+**/__pycache__
+**/.pytest_cache
+.env
+mobile
+dashboard
+rag-service
+docs
+ml-training/datasets
+ml-training/colab
+backend/app/tests
+backend/app/static/photos/*
+!backend/app/static/photos/_seed
