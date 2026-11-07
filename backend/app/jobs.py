@@ -185,7 +185,29 @@ async def kick() -> None:
             logger.exception("Job worker pass failed")
 
 
-async def loop(interval_s: float) -> None:
+async def daily_pass() -> None:
+    """SLA escalation + rain forecast (what the scheduler's daily call does)."""
+    from backend.app import weather
+    from backend.app.db import async_session
+    from backend.app.sla_job import run_sla
+
+    try:
+        async with async_session() as db:
+            await run_sla(db)
+            await weather.refresh(db)
+            await db.commit()
+    except Exception:  # noqa: BLE001
+        logger.exception("Daily SLA/weather pass failed")
+
+
+async def loop(interval_s: float, daily_every_s: float = 86400) -> None:
+    """In-process scheduler for always-on hosts (local, Hugging Face Space):
+    jobs every `interval_s`, SLA + weather once at start and then daily."""
+    last_daily = -daily_every_s
     while True:
         await kick()
+        now = asyncio.get_running_loop().time()
+        if now - last_daily >= daily_every_s:
+            last_daily = now
+            await daily_pass()
         await asyncio.sleep(interval_s)

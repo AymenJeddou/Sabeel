@@ -1,9 +1,31 @@
-# Evaluation sets that need people in the field
+# Evaluation sets that need human eyes
 
-Two datasets can only be made by the team, with phones, in Tunisia. The tools
-to score them are ready; the photos are not (they cannot be invented).
+Two datasets need a person to check them. The photos can come from Mapillary
+(no fieldwork) or from the team's phones; either way, a human reviews the
+labels, because the model cannot grade itself.
 
 ## 1. Tunisian test set `tunisia_v1/` (issue #44)
+
+### Route A, no fieldwork: Mapillary (recommended)
+
+Mapillary has thousands of crowdsourced street photos of Tunisian roads
+(CC BY-SA 4.0). Get a free developer token at mapillary.com (Developers ->
+Register an application), then:
+
+```bash
+set MAPILLARY_TOKEN=MLY|...
+python fetch_mapillary.py --per-area 300 --out eval/tunisia_v1
+```
+
+It scans 9 cities, keeps every photo where the model sees a pothole plus as
+many random photos where it sees nothing, and writes the model's boxes as
+pre-labels. **Review every image** in Roboflow or Label Studio (import images
++ YOLO labels): delete wrong boxes, draw missed potholes, keep negatives
+empty. That review is about one or two hours of desk work, and it is what
+makes it ground truth. Then score it with `evaluate.py` below. These are
+mostly car-mounted photos, so they also measure the driving mode.
+
+### Route B, phone photos
 
 **Collect 50-80 photos** with at least 2 phones in at least 3 areas (city
 centre, residential street, outer or rural road):
@@ -38,8 +60,8 @@ alarms / M (also per negative type) in `MODEL_REPORT.md`.
 
 ## 2. Human severity labels `severity_labels.csv` (issue #42)
 
-Put 50-100 photos (the seed photos plus the Tunisian ones) in
-`eval/severity_photos/` and fill one row each. Two people rate
+Put 50-100 photos (the seed photos plus the reviewed Tunisian ones, Mapillary
+included) in `eval/severity_photos/` and fill one row each. Two people rate
 independently, then agree on `human_severity_final`.
 
 | Severity | Rubric |

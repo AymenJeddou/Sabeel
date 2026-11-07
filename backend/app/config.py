@@ -62,6 +62,10 @@ class Settings(BaseSettings):
     open_meteo_url: str = "https://api.open-meteo.com/v1/forecast"
     rain_alert_mm: float = 10
 
+    # Folder of the built web app (dashboard/dist) to serve at "/" from this
+    # API, for single-container hosting. Empty = API only.
+    serve_web_dir: str = ""
+
     # Public links printed on PDFs and QR codes
     public_base_url: str = "http://localhost:5173"
 

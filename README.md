@@ -130,7 +130,9 @@ cd dashboard && npm install && npm run dev            # http://localhost:5173
 cd mobile && flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
 ```
 
-Dashboard demo logins: `demo-mun-tunis`, `demo-dre-tunis`, `demo-ministry`. Production setup (Cloud Run, Supabase, Cloudflare Pages, all free tiers): [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+Dashboard demo logins: `demo-mun-tunis`, `demo-dre-tunis`, `demo-ministry`.
+
+**Deploy for free in about 30 minutes:** one Hugging Face Space (API, RAG and web app in one container) plus Supabase (database and photos). No credit card. Step by step: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Quality
 

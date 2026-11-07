@@ -63,3 +63,9 @@ async def health() -> dict:
     async with engine.connect() as conn:
         await conn.execute(text("SELECT 1"))
     return {"status": "ok"}
+
+
+# Single-container hosting: the built web app (hash-routed SPA) is served at
+# "/". Mounted last, so every API route above keeps priority.
+if settings.serve_web_dir:
+    app.mount("/", StaticFiles(directory=settings.serve_web_dir, html=True), name="web")
