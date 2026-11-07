@@ -85,7 +85,7 @@ def clean_db(client, monkeypatch):
     ratelimit.reset()
     clear_public_cache()
 
-    async def fake_generate(lat, lon, score, road_type=None):
+    async def fake_generate(lat, lon, score, road_type=None, **_):
         return {
             "sheet_text": f"Fiche de travaux : nid-de-poule sévérité {score}/5.\nAction : réparation.\nRéférences: TN-CCL2018-ART69",
             "rule_citations": [{"rule_id": "TN-CCL2018-ART69", "source": "Loi 2018-29, art. 69", "excerpt": "domaine public communal"}],

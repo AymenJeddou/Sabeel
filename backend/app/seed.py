@@ -219,7 +219,9 @@ async def build(rng: random.Random, offices: dict[str, Office]) -> tuple[list, l
     async def sheet(item):
         p, street, district, office = item
         async with gate:
-            result = await rag_generate(lat=p.lat, lon=p.lon, score=p.severity, road_type=p.road_type)
+            result = await rag_generate(
+                lat=p.lat, lon=p.lon, score=p.severity, road_type=p.road_type, office_name=office.name,
+                address=p.address_label, jurisdiction="state" if p.road_class == "national" else "municipal")
         if result:
             p.sheet_text, p.sheet_citations = result["sheet_text"], result["rule_citations"]
         else:

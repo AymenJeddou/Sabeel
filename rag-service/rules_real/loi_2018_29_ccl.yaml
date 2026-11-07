@@ -1,5 +1,10 @@
 doc_title: "Loi organique n°2018-29 du 9 mai 2018, relative au Code des Collectivités Locales"
 is_placeholder: false
+# Status (2026-11-07): Business News (1 Oct 2026) reports that décret-loi n°4 du
+# 30 septembre 2026 relatif aux conseils municipaux repeals Law 2018-29 (art. 139),
+# with effect after the results of the next municipal elections. Until then the
+# 2018 code applies. Re-check article 69's equivalent in the new text once it is
+# in force and update these rules.
 
 rules:
   - rule_id: TN-CCL2018-ART69

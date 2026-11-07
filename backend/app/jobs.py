@@ -65,7 +65,15 @@ async def handle_sheet(db: AsyncSession, p: Pothole) -> None:
         return  # already generated or approved meanwhile
     if p.enrichment_source is None:
         await enrich_pothole(db, p)
-    result = await rag_client.generate(lat=p.lat, lon=p.lon, score=p.severity or 3, road_type=p.road_type)
+    from backend.app.db_models import Office
+    from backend.app.geo.road_class_map import office_kind_for
+
+    office = await db.get(Office, p.target_office_id) if p.target_office_id else None
+    result = await rag_client.generate(
+        lat=p.lat, lon=p.lon, score=p.severity or 3, road_type=p.road_type,
+        office_name=office.name if office else None, address=p.address_label,
+        jurisdiction="municipal" if office_kind_for(p.road_class or "") == "Municipality" else "state",
+    )
     if not result:
         raise JobError("RAG service unavailable")
     p.sheet_text = p.sheet_text_original = result["sheet_text"]

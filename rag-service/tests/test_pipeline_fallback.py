@@ -24,7 +24,7 @@ def _chunk(rule_id: str, road_type: str = "urbain_principal", target_office: str
 
 
 def test_generate_insufficient_rules_path(monkeypatch):
-    monkeypatch.setattr(pipeline, "retrieve_chunks", lambda road_type, score, top_k=None: [])
+    monkeypatch.setattr(pipeline, "retrieve_chunks", lambda road_type, score, top_k=None, jurisdiction=None: [])
 
     result = pipeline.generate(lat=36.8, lon=10.18, score=4, road_type="urbain_principal")
 
@@ -36,7 +36,7 @@ def test_generate_insufficient_rules_path(monkeypatch):
 
 def test_generate_falls_back_to_template_when_llm_unavailable(monkeypatch):
     chunks = [_chunk("RULE_A", target_office="DGPC")]
-    monkeypatch.setattr(pipeline, "retrieve_chunks", lambda road_type, score, top_k=None: chunks)
+    monkeypatch.setattr(pipeline, "retrieve_chunks", lambda road_type, score, top_k=None, jurisdiction=None: chunks)
     monkeypatch.setattr(pipeline, "call_llm", lambda prompt: None)
 
     result = pipeline.generate(lat=36.8, lon=10.18, score=4, road_type="rural")
@@ -49,7 +49,7 @@ def test_generate_falls_back_to_template_when_llm_unavailable(monkeypatch):
 
 def test_generate_discards_llm_output_with_invented_citation(monkeypatch):
     chunks = [_chunk("RULE_A")]
-    monkeypatch.setattr(pipeline, "retrieve_chunks", lambda road_type, score, top_k=None: chunks)
+    monkeypatch.setattr(pipeline, "retrieve_chunks", lambda road_type, score, top_k=None, jurisdiction=None: chunks)
     monkeypatch.setattr(
         pipeline, "call_llm", lambda prompt: "Some sheet text.\nRéférences: RULE_A, RULE_INVENTED"
     )
