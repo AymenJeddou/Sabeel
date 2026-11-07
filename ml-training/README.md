@@ -1,88 +1,72 @@
-# WP1 – AI Detection Model  
-**Pothole Detection & Management – MVP Tunisia**
+# Pothole detection model
 
-Sprint 1 (Foundations) – AI Detection Model  
-Owner: Tharaa (co: Jasseur)
+Finds potholes in a photo and grades them 1-5. Used in-process by the Core
+API (`backend/app/vision_client.py`) for every report, for the AI check of
+repair photos, and for driving-mode frames.
 
----
+**Results, limits and plans: [`MODEL_REPORT.md`](MODEL_REPORT.md).**
 
-## Project Goal
-
-This work package builds the **pothole detection model** that powers the whole system.
-
-The model receives a photo (from the mobile app) and returns:
-- Severity score (1–5)
-- Confidence
-- Bounding boxes of detected potholes
-- Inference time
-
-This output is consumed by:
-- **WP3** (Core API) → stores the report and decides whether to generate a work sheet
-- **WP2** (RAG Agent) → generates the official work sheet when score ≥ 3
-- **WP4** (Mobile App) → shows status to the citizen
-
----
-
-## Current model (v2, YOLO11s)
-
-`models/pothole_model.onnx` is a YOLO11s detector trained for 100 epochs on a T4 GPU with
-[`colab/train_pothole_yolo11s.ipynb`](colab/train_pothole_yolo11s.ipynb).
-
-**Data:** RDD2022 pothole boxes (D40, 3,674 images from 6 countries, [figshare](https://figshare.com/articles/dataset/RDD2022_-_The_multi-national_Road_Damage_Dataset_released_through_CRDDC_2022/21431547))
-+ 300 close-up pothole photos ([Roboflow "Potholes Detection", CC BY 4.0](https://universe.roboflow.com/project-ssayl/potholes-detection-d4rma))
-+ 15% pothole-free road photos from RDD2022, so the model learns what a normal road looks like.
-Split 70 / 15 / 15 into train / val / test. The confidence threshold is tuned on val; the numbers below are measured once on test.
-
-| Held-out test set (686 images) | |
+| | |
 |---|---|
-| mAP50 | **0.562** |
-| mAP50-95 | 0.248 |
-| Precision / Recall | 0.616 / 0.537 |
-| F1 at the tuned threshold (0.28) | 0.573 |
-| CPU time, end to end (8-core laptop) | ≈ 240 ms |
+| Model | YOLO11s, ONNX on CPU (`models/pothole_model.onnx`) |
+| Test split (686 images) | mAP50 0.562 · precision 0.616 · recall 0.537 |
+| Latency | ~114 ms end to end on an 8-core laptop, 232 ms on Colab's 2 vCPUs (target < 250 ms) |
+| Threshold | 0.28 (tuned on val) |
 
-On the 32 real road photos in `backend/app/static/photos/_seed/` it finds 24 of 30 potholes and raises
-no alarm on the 2 pothole-free photos (the Sprint 1 model: 9 of 30, and 2 false alarms).
-Full numbers: [`models/test_metrics.json`](models/test_metrics.json).
+## Interface (Section 4.3)
 
-`inference.py` letterboxes the photo exactly like Ultralytics does during training, reads the input
-size from the model file, and keeps boxes with `CONF_THRESHOLD` (default 0.28) and IoU-based NMS.
+```python
+from inference import infer
+infer(image_bytes, source="manual") -> {
+    "score": int | None,          # 1-5, None when nothing is detected
+    "confidence": float | None,   # best box
+    "boxes": [{"x", "y", "w", "h", "conf", "class"}],   # pixels of the original image
+    "image_size": [w, h],
+    "inference_ms": float,
+}
+```
 
-If Colab disconnects mid-training, [`colab/resume_training.ipynb`](colab/resume_training.ipynb) continues from the last epoch.
-[`colab/round2_800px.ipynb`](colab/round2_800px.ipynb) fine-tunes at 800 px and compares accuracy and CPU speed against this model.
-Result (same test set, same Colab CPU): 800 px scored mAP50 0.496 vs 0.562 and ran 1.53× slower (386 vs 252 ms), so we kept 640 px.
-OpenVINO was only ~10% faster than ONNX Runtime (226 vs 252 ms), not worth an extra dependency.
+`source` (`manual` | `web` | `driving_mode`) picks the severity bands
+(`severity_scoring.py`): close-up photos and dashcam frames show the same
+pothole at very different sizes.
 
----
+## Retrain: three commands
 
-## What is delivered in Sprint 1
+```bash
+pip install -r requirements.txt
+python build_dataset.py --rdd /path/to/RDD2022 --out datasets/sabeel_v2   # + --extra datasets/feedback_vN
+python train.py           # GPU; or colab/train_pothole_yolo11s.ipynb (cell 4 runs build_dataset.py)
+python export_onnx.py     # -> models/pothole_model.onnx
+```
 
-| Deliverable | Status | Location |
-|-------------|--------|----------|
-| Training pipeline (YOLOv8n, 1 epoch) | Done | `train.py` |
-| ONNX model | Done | `models/pothole_model.onnx` |
-| Exact inference contract | Done | `inference.py` |
-| Severity scoring rule (1–5) | Done | `severity_scoring.py` |
-| CPU timing test | Done | Average **71.4 ms** |
-| Dataset (prepared + converted) | Done | `datasets/yolo_*` |
+Then measure and compare before replacing the shipped model:
 
----
+```bash
+python evaluate.py --data datasets/sabeel_v2/data.yaml     # test split: mAP + what the API would do
+python timing_test.py                                      # latency + seed-photo check
+```
 
-## Project Structure
+Replace `models/pothole_model.onnx` only if test mAP50 improves and the seed
+check doesn't get worse.
 
-```text
-wp1-ai-model/
-├── models/
-│   └── pothole_model.onnx          ← final model for WP3
-├── datasets/
-│   ├── yolo_annotated_potholes/    ← converted dataset 1
-│   └── yolo_rdd2022_pothole/       ← converted dataset 2
-├── runs/detect/pothole_yolov8n_sprint1/
-├── train.py
-├── export_onnx.py
-├── inference.py                    ← main interface for WP3
-├── severity_scoring.py
-├── timing_test.py
-├── data.yaml
-├── requirements.txt
-└── README.md
+## Tools
+
+| Script | Purpose |
+|---|---|
+| `build_dataset.py` | The one dataset pipeline (RDD2022 + close-ups + negatives, 70/15/15) |
+| `train.py` · `export_onnx.py` | Train and export (same settings as the notebook) |
+| `evaluate.py` | mAP on a split + found / false alarms at the production threshold |
+| `timing_test.py` | Median / p90 latency, seed photos found and false alarms |
+| `quantize.py` | INT8 static quantization (detection head optionally in float) |
+| `error_analysis.py` | Exports false negatives / positives on val for tagging |
+| `export_feedback_dataset.py` | Officer and citizen corrections → versioned YOLO dataset |
+| `severity_check.py` | Severity rule vs human labels, suggested bands |
+| `eval/` | Protocols for the Tunisian test set and the severity labels |
+
+## History
+
+Sprint 1 trained YOLOv8n for one epoch to prove the pipeline (71 ms, but it
+missed most potholes and scored a cartoon house 5/5). Sprint 2 replaced it
+with this YOLO11s model (#41). The old `convert_to_yolo.py` dropped
+pothole-free images (the cause of false alarms on cracks and manholes) and
+had no test split; `build_dataset.py` replaces it.
