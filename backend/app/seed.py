@@ -218,14 +218,18 @@ async def build(rng: random.Random, offices: dict[str, Office]) -> tuple[list, l
         ev(p, now - timedelta(days=1), "system", "status", "fixed", "reopened", "2 citoyens : toujours là")
 
     # Work sheets: the real RAG service if it answers, else the rule-quoting template.
-    gate = asyncio.Semaphore(4)
+    gate = asyncio.Semaphore(1)  # free LLM tiers allow ~2-3 sheets per minute
 
     async def sheet(item):
         p, street, district, office = item
         async with gate:
-            result = await rag_generate(
-                lat=p.lat, lon=p.lon, score=p.severity, road_type=p.road_type, office_name=office.name,
-                address=p.address_label, jurisdiction="state" if p.road_class == "national" else "municipal")
+            for _ in range(4):
+                result = await rag_generate(
+                    lat=p.lat, lon=p.lon, score=p.severity, road_type=p.road_type, office_name=office.name,
+                    address=p.address_label, jurisdiction="state" if p.road_class == "national" else "municipal")
+                if not (result and result.get("retry_after_s")):
+                    break
+                await asyncio.sleep(result["retry_after_s"] + 1)
         if result:
             p.sheet_text, p.sheet_citations = result["sheet_text"], result["rule_citations"]
         else:

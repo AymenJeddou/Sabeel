@@ -32,6 +32,8 @@ class GenerateResponse(BaseModel):
     road_type: str
     generated_at: str
     generation_ms: float
+    llm_used: bool = False
+    retry_after_s: Optional[float] = None
 
 
 class HealthResponse(BaseModel):

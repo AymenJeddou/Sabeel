@@ -135,3 +135,22 @@ def test_low_severity_potholes_get_no_sheet_and_can_be_fixed_directly(client):
     r = client.post(f"/potholes/{pid}/fix", data={"note": "colmaté à froid"},
                     files={"proof": ("f.jpg", io.BytesIO(ROAD_JPG), "image/jpeg")}, headers=auth())
     assert r.status_code == 200 and r.json()["status"] == "fixed"
+
+
+def test_rate_limited_llm_is_retried_then_the_template_is_accepted(client, monkeypatch):
+    from backend.app.config import settings
+
+    good = rag_client.generate
+
+    async def limited(**kw):
+        result = await good(**kw)
+        return {**result, "llm_used": False, "retry_after_s": 20}
+
+    monkeypatch.setattr(rag_client, "generate", limited)
+    monkeypatch.setattr(settings, "job_max_attempts", 2)
+    pid = confirmed(client)
+    run_jobs(client)
+    assert client.get(f"/potholes/{pid}/sheet", headers=auth()).json()["sheet_status"] == "queued"  # waits
+    make_due(client)
+    run_jobs(client)  # last attempt: the rule-only sheet is accepted
+    assert client.get(f"/potholes/{pid}/sheet", headers=auth()).json()["sheet_status"] == "generated"

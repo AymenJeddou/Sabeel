@@ -57,7 +57,7 @@ async def handle_enrich(db: AsyncSession, p: Pothole) -> None:
         raise JobError("OpenStreetMap unreachable; fallback values stored, will retry")
 
 
-async def handle_sheet(db: AsyncSession, p: Pothole) -> None:
+async def handle_sheet(db: AsyncSession, p: Pothole, attempt: int = 1) -> None:
     from backend.app.geo.enrichment import enrich_pothole
     from backend.app.potholes import now_utc, record_event
 
@@ -76,6 +76,10 @@ async def handle_sheet(db: AsyncSession, p: Pothole) -> None:
     )
     if not result:
         raise JobError("RAG service unavailable")
+    if result.get("retry_after_s") and attempt < settings.job_max_attempts:
+        # Free LLM tiers are rate-limited per minute: wait for a model-written
+        # sheet; the rule-only template is accepted on the last attempt.
+        raise JobError(f"LLM rate-limited (retry in {result['retry_after_s']:.0f} s)")
     p.sheet_text = p.sheet_text_original = result["sheet_text"]
     p.sheet_citations = result.get("rule_citations") or []
     p.sheet_status = "generated"
@@ -83,6 +87,7 @@ async def handle_sheet(db: AsyncSession, p: Pothole) -> None:
     await record_event(
         db, p, "system", "sheet_generated",
         data={"road_type": result.get("road_type"), "generation_ms": result.get("generation_ms"),
+              "llm_used": result.get("llm_used"),
               "citations": [c.get("rule_id") for c in p.sheet_citations]},
     )
 
@@ -98,7 +103,10 @@ async def run_job(session_factory, job_id: int) -> str:
         job = await db.get(Job, job_id)
         p = await db.get(Pothole, job.pothole_id)
         try:
-            await HANDLERS[job.type](db, p)
+            if job.type == "sheet":
+                await handle_sheet(db, p, attempt=job.attempts)
+            else:
+                await HANDLERS[job.type](db, p)
             job.status, job.last_error = "done", None
         except Exception as exc:  # noqa: BLE001 - every failure becomes a retry
             if not isinstance(exc, JobError):

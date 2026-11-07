@@ -906,7 +906,7 @@ The MVP is accepted when all items below are demonstrated live to the team and s
 | 5 | Map shows, filters, deduplicates in the database | ✅ |
 | 6 | Status flow logged, invalid transition rejected | ✅ `report_events`, 409 |
 | 7 | Push to `main` deploys | ✅ workflow ready; needs the cloud accounts (`DEPLOYMENT.md`) |
-| 8 | 0 TND per month | ✅ free tiers only (LLM: see OP-6) |
+| 8 | 0 TND per month | ✅ free tiers only (LLM: Groq free tier) |
 | 9 | Code, Dockerfiles, API docs, README, model report | ✅ |
 
 ---
@@ -988,7 +988,7 @@ The RAG service internally uses the road-type categories `urbain_principal`, `ur
 | OP-3 | Replace placeholder rules by validated texts | Resolved: Law 2018-29, Law 86-17, FHWA manual; a review by a jurist is still recommended |
 | OP-4 | Priority formula and traffic source | Resolved: AD-17, with the OSM road class as the traffic proxy |
 | OP-5 | Law 2018-29 is reported repealed by décret-loi n°4 of 30 Sept 2026, effective after the next municipal elections | Open: update `rules_real/loi_2018_29_ccl.yaml` when the new text is in force |
-| OP-6 | LLM provider: the Hugging Face token has no credits left (402) | Open: choose a Groq / OpenRouter free tier or HF credits; sheets use the rule-only template meanwhile |
+| OP-6 | LLM provider: the Hugging Face token has no credits left (402) | Resolved: Groq free tier, `qwen/qwen3.8-27b` (~10 s per sheet, valid citations); the template remains the fallback |
 | OP-7 | mAP@50 0.562 vs the 0.75 target | Open: Tunisian test set and error analysis (`MODEL_REPORT.md` §6) |
 
 ---|---|---|---|

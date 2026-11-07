@@ -21,7 +21,14 @@ from datetime import datetime, timezone
 
 from . import config
 from .citation_guard import validate_citations
-from .generation import OFFICE_LABELS_FR, build_prompt, call_llm, pick_target_office, render_template_fallback
+from .generation import (
+    OFFICE_LABELS_FR,
+    LLMRateLimited,
+    build_prompt,
+    call_llm,
+    pick_target_office,
+    render_template_fallback,
+)
 from .retrieval import retrieve_chunks
 from .road_type import normalize_road_type
 
@@ -79,7 +86,11 @@ def generate(
             return _finalize(sheet_text, [], "Municipality", resolved_road_type, start)
 
         prompt = build_prompt(shown_chunks, score, resolved_road_type, lat, lon, office_name, address)
-        llm_output = call_llm(prompt)
+        retry_after = None
+        try:
+            llm_output = call_llm(prompt)
+        except LLMRateLimited as exc:
+            llm_output, retry_after = None, exc.retry_after_s
 
         target_office = pick_target_office(shown_chunks)
 
@@ -92,11 +103,15 @@ def generate(
                     target_office,
                     resolved_road_type,
                     start,
+                    llm_used=True,
                 )
             logger.info("LLM output failed citation validation; using template fallback.")
 
         sheet_text = render_template_fallback(shown_chunks, score, resolved_road_type, lat, lon, target_office, office_name)
-        return _finalize(sheet_text, _citations_from_chunks(shown_chunks), target_office, resolved_road_type, start)
+        return _finalize(
+            sheet_text, _citations_from_chunks(shown_chunks), target_office, resolved_road_type, start,
+            retry_after_s=retry_after,
+        )
 
     except Exception:  # noqa: BLE001 - generate() must never raise
         logger.exception("generate() failed unexpectedly; returning safe fallback.")
@@ -115,7 +130,10 @@ def generate(
         }
 
 
-def _finalize(sheet_text: str, citations: list[dict], target_office: str, road_type: str, start: float) -> dict:
+def _finalize(
+    sheet_text: str, citations: list[dict], target_office: str, road_type: str, start: float,
+    llm_used: bool = False, retry_after_s: float | None = None,
+) -> dict:
     elapsed_ms = (time.perf_counter() - start) * 1000
     return {
         "sheet_text": sheet_text,
@@ -125,4 +143,8 @@ def _finalize(sheet_text: str, citations: list[dict], target_office: str, road_t
         "road_type": road_type,
         "generated_at": _now_iso(),
         "generation_ms": round(elapsed_ms, 2),
+        # False = the rule-only template was used. retry_after_s set = the LLM
+        # was rate-limited: the Core API retries later for a model-written sheet.
+        "llm_used": llm_used,
+        "retry_after_s": retry_after_s,
     }

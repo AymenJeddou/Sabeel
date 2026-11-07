@@ -35,7 +35,7 @@ skipped until its secrets exist, so the workflow stays green before setup.
 5. **GitHub repository variables**: `API_URL` (the `sabeel-api` URL, known
    after the first deploy), `RAG_URL` (the `sabeel-rag` URL), `WEB_URL` (the
    Pages URL, e.g. `https://sabeel.pages.dev`), `LLM_BASE_URL` and `LLM_MODEL`
-   (e.g. `https://api.groq.com/openai/v1` and `llama-3.1-8b-instant`),
+   (in use: `https://api.groq.com/openai/v1` and `qwen/qwen3.8-27b`),
    optionally `DEMO_LOGINS=1` for a jury demo.
 6. **Cloudflare**: create a Pages project named `sabeel` (direct upload).
 7. **Offices**: once the API is up, create the offices and their tokens:
