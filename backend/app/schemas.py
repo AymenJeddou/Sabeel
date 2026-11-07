@@ -1,11 +1,14 @@
-"""
-Pydantic request/response models mirroring Sprint1_Action_Plan.md Sections 4.1 and 4.5
-field-for-field. Do not rename fields (lat/lon, never lng — see Section 5 of the plan).
+"""Pydantic request/response models.
+
+Field names follow the frozen contracts (lat/lon, never lng; UTC timestamps).
+Public models are explicit allow-lists: anything not declared here can never
+leak into a citizen-facing or public response (device ids, photos of others,
+sheet text). `tests/test_public.py` enforces that.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -16,79 +19,198 @@ from backend.app.status import ReportStatus
 class ReportSource(str, Enum):
     MANUAL = "manual"
     DRIVING_MODE = "driving_mode"
+    WEB = "web"
 
+
+SheetStatus = Literal["queued", "generated", "approved", "failed"]
+ConfirmationKind = Literal["seen", "fixed_ok", "not_fixed", "not_pothole"]
+
+
+# --- Citizen side -----------------------------------------------------------
 
 class ReportCreateResponse(BaseModel):
     report_id: UUID
     device_report_id: str
+    pothole_id: UUID | None
+    ref: str | None
+    detected: bool
+    needs_review: bool
     status: ReportStatus
     score: int | None = None
-    # Additive beyond Section 4.5's illustrative shape -- populated only when
-    # the synchronous RAG call succeeds within this same request. Field names
-    # elsewhere are unchanged; this is extra information a fully async
-    # implementation wouldn't have yet at response time.
+    confidence: float | None = None
+    sheet_status: SheetStatus | None = None
+    # Kept for Sprint 1 clients. Sheets are generated in the background now,
+    # so these are always null at creation time; poll the report instead.
     sheet_summary: str | None = None
     target_office: str | None = None
 
 
-class MapReport(BaseModel):
+class TimelineStep(BaseModel):
+    status: str
+    at: datetime
+
+
+class ReportDetail(BaseModel):
+    """GET /reports/{device_report_id}: what the phone that sent it may see."""
+
     report_id: UUID
+    device_report_id: str
+    pothole_id: UUID | None
+    ref: str | None
+    status: ReportStatus
+    score: int | None
+    severity: int | None
+    detected: bool
+    sheet_status: SheetStatus | None
+    sheet_summary: str | None = None  # first lines of the approved sheet only
+    target_office: str | None
+    address_label: str | None
+    photo_url: str | None
+    created_at: datetime
+    updated_at: datetime
+    fixed_at: datetime | None
+    timeline: list[TimelineStep]
+
+
+class DeviceReport(BaseModel):
+    device_report_id: str
+    report_id: UUID
+    pothole_id: UUID | None
+    ref: str | None
+    status: ReportStatus
+    score: int | None
+    severity: int | None
+    detected: bool
+    sheet_status: SheetStatus | None
+    target_office: str | None
+    address_label: str | None
+    photo_url: str | None
+    lat: float
+    lon: float
+    created_at: datetime
+    updated_at: datetime
+    fixed_at: datetime | None
+
+
+class ConfirmationIn(BaseModel):
+    device_id: str = Field(min_length=8, max_length=100)
+    kind: ConfirmationKind
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    gps_accuracy_m: float = Field(ge=0, le=10000)
+
+
+class ConfirmationOut(BaseModel):
+    pothole_id: UUID
+    kind: ConfirmationKind
+    created: bool
+    status: ReportStatus
+    confirm_count: int
+    device_count: int
+    fixed_ok_count: int
+    not_fixed_count: int
+    not_pothole_count: int
+
+
+class Detection(BaseModel):
+    """POST /detect (driving mode): a frame is scored, never stored."""
+
+    detected: bool
+    score: int | None
+    confidence: float | None
+    boxes: list[dict[str, Any]]
+    inference_ms: float | None
+
+
+# --- Public (map, transparency page) ---------------------------------------
+
+class MapItem(BaseModel):
+    pothole_id: UUID
+    ref: str
     lat: float
     lon: float
     score: int | None
     status: ReportStatus
-    cluster_id: UUID | None
+    report_count: int
+    confirm_count: int
+    address_label: str | None
+    created_on: date
+    # Sprint 1 compatibility: one map row is now one pothole.
+    report_id: UUID | None = None
+    cluster_id: UUID | None = None
 
 
-class ReportDetail(BaseModel):
-    report_id: UUID
+class PublicPothole(BaseModel):
+    pothole_id: UUID
+    ref: str
+    lat: float
+    lon: float
     status: ReportStatus
-    score: int | None
-    sheet_summary: str | None = None
+    severity: int | None
+    report_count: int
+    device_count: int
+    confirm_count: int
+    fixed_ok_count: int
+    not_fixed_count: int
+    road_name: str | None
+    address_label: str | None
+    municipality: str | None
+    region: str | None
+    target_office: str | None
+    sheet_status: SheetStatus | None
+    sla_level: str | None
+    fix_verified: bool
+    created_on: date
+    confirmed_on: date | None
+    fixed_on: date | None
 
+
+class PublicMapPoint(BaseModel):
+    lat: float
+    lon: float
+    severity: int | None
+    status: ReportStatus
+
+
+class SheetVerification(BaseModel):
+    pothole_id: UUID
+    ref: str
+    valid: bool
+    approved_on: date | None
+    office: str | None
+
+
+# --- Officer side -----------------------------------------------------------
 
 class StatusUpdateRequest(BaseModel):
     status: ReportStatus
+    note: str | None = Field(default=None, max_length=1000)
 
 
 class StatusUpdateResponse(BaseModel):
-    report_id: UUID
+    report_id: UUID | None = None
+    pothole_id: UUID | None = None
     status: ReportStatus
     updated_at: datetime
+
+
+class SheetEdit(BaseModel):
+    sheet_text: str = Field(min_length=10, max_length=8000)
+
+
+class FeedbackIn(BaseModel):
+    label: Literal["not_pothole", "confirmed_pothole"]
+    note: str | None = Field(default=None, max_length=1000)
 
 
 class ErrorResponse(BaseModel):
     detail: str = Field(..., examples=["Transition is not forward"])
 
 
-class ReportSummary(BaseModel):
-    """A report as the authorities dashboard sees it (derived fields: insights.py)."""
-
-    report_id: UUID
-    ref: str
-    device_report_id: str
-    device_id: str | None
-    lat: float
-    lon: float
-    address: str | None
-    score: int | None
-    confidence: float | None
-    status: ReportStatus
-    source: ReportSource
-    cluster_id: UUID | None
-    cluster_size: int
-    target_office: str | None
-    sheet_text: str | None
-    photo_url: str | None
-    created_at: datetime
-    updated_at: datetime
-    due_at: datetime | None
-    overdue: bool
-    priority: int
-
+# --- Messages and assistant -------------------------------------------------
 
 class MessageIn(BaseModel):
-    device_id: str = Field(min_length=1)
+    device_id: str = Field(min_length=1, max_length=100)
     sender: Literal["citizen", "authority"]
     body: str = Field(min_length=1, max_length=2000)
 
@@ -109,7 +231,7 @@ class Conversation(BaseModel):
 
 class AssistantTurn(BaseModel):
     role: Literal["user", "assistant"]
-    content: str
+    content: str = Field(max_length=4000)
 
 
 class AssistantRequest(BaseModel):
@@ -119,5 +241,5 @@ class AssistantRequest(BaseModel):
 
 class AssistantReply(BaseModel):
     answer: str
-    refs: list[ReportSummary]
+    refs: list[dict[str, Any]]
     source: Literal["llm", "fallback"]

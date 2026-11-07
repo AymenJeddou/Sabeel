@@ -1,11 +1,19 @@
-"""Citizen <-> authority support chat: one thread per device, polled by both apps."""
+"""Citizen <-> authority support chat: one thread per device, polled by both apps.
 
-from fastapi import APIRouter, Depends
+A citizen reads and writes only their own thread (the device_id is a random
+UUID known only to that phone). Replying as `authority` and listing every
+conversation require an officer token.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi import status as http
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.app.auth import optional_office, require_office
 from backend.app.db import get_db
-from backend.app.db_models import Message, Report
+from backend.app.db_models import Message, Office, Report
+from backend.app.ratelimit import limit
 from backend.app.schemas import Conversation, MessageIn, MessageOut
 
 router = APIRouter(tags=["messages"])
@@ -17,8 +25,15 @@ async def list_messages(device_id: str, db: AsyncSession = Depends(get_db)) -> l
     return list(rows.scalars())
 
 
-@router.post("/messages", response_model=MessageOut, status_code=201)
-async def send_message(body: MessageIn, db: AsyncSession = Depends(get_db)) -> Message:
+@router.post(
+    "/messages", response_model=MessageOut, status_code=201,
+    dependencies=[Depends(limit("messages_device", 20, 600, by="device"))],
+)
+async def send_message(
+    body: MessageIn, db: AsyncSession = Depends(get_db), office: Office | None = Depends(optional_office)
+) -> Message:
+    if body.sender == "authority" and office is None:
+        raise HTTPException(http.HTTP_401_UNAUTHORIZED, "Office token required to answer as the authority")
     message = Message(**body.model_dump())
     db.add(message)
     await db.commit()
@@ -27,12 +42,10 @@ async def send_message(body: MessageIn, db: AsyncSession = Depends(get_db)) -> M
 
 
 @router.get("/conversations", response_model=list[Conversation])
-async def list_conversations(db: AsyncSession = Depends(get_db)) -> list[dict]:
+async def list_conversations(db: AsyncSession = Depends(get_db), _: Office = Depends(require_office)) -> list[dict]:
     """Newest thread first, with the device's report count for context."""
     messages = list((await db.execute(select(Message).order_by(Message.created_at))).scalars())
-    report_counts = dict(
-        (await db.execute(select(Report.device_id, func.count()).group_by(Report.device_id))).all()
-    )
+    report_counts = dict((await db.execute(select(Report.device_id, func.count()).group_by(Report.device_id))).all())
     threads: dict[str, dict] = {}
     for m in messages:
         t = threads.setdefault(m.device_id, {"device_id": m.device_id, "count": 0})
