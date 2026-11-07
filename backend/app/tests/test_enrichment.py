@@ -27,6 +27,8 @@ def test_ref_patterns():
     assert classify("residential", None, urban=True) == ("urbain_secondaire", "urbain_secondaire")
     assert classify("track", None, urban=False) == ("piste", "piste")
     assert classify("motorway", "A1", urban=False) == ("autoroute", "autoroute")
+    # Expressway tagged motorway but legally a national road (RN8 north of Tunis).
+    assert classify("motorway", "RN8", urban=True) == ("national", "urbain_principal")
     assert office_kind_for("national") == "DGPC" and office_kind_for("urbain_secondaire") == "Municipality"
 
 

@@ -30,14 +30,16 @@ def classify(highway: str | None, ref: str | None, urban: bool) -> tuple[str, st
     """Returns (road_class, road_type)."""
     highway = (highway or "").lower()
     ref = ref or ""
-    if highway in MOTORWAY or ref.upper().startswith("A"):
-        return "autoroute", "autoroute"
-    if highway in TRACK:
-        return "piste", "piste"
+    # The legal ref wins over the road's shape: the RN8 expressway out of
+    # Tunis is tagged highway=motorway but is a national road (DGPC).
     if _NATIONAL.match(ref):
         return "national", "urbain_principal" if urban else "rural"
     if _REGIONAL.match(ref):
         return "regional", "urbain_principal" if urban else "rural"
+    if highway in MOTORWAY or re.match(r"^\s*A\s?-?\d", ref, re.I):
+        return "autoroute", "autoroute"
+    if highway in TRACK:
+        return "piste", "piste"
     if _LOCAL.match(ref):
         return "local", "urbain_secondaire" if urban else "rural"
     if highway in MAJOR:

@@ -1,0 +1,90 @@
+name: Deploy
+
+# Every push to main deploys (cahier acceptance criterion 7):
+# - the Core API and the RAG service to Google Cloud Run (free tier, scale to zero);
+# - the web app (dashboard + public site + PWA) to Cloudflare Pages.
+# Each job is skipped until its secrets exist. Setup: docs/DEPLOYMENT.md.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGION: europe-west1
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    env:
+      HAS_GCP: ${{ secrets.GCP_SA_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image (always, as a check)
+        run: docker build -t sabeel-api .
+      - if: env.HAS_GCP == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - if: env.HAS_GCP == 'true'
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Push and deploy sabeel-api
+        if: env.HAS_GCP == 'true'
+        run: |
+          IMAGE=${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/sabeel/api:${{ github.sha }}
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+          docker tag sabeel-api "$IMAGE" && docker push "$IMAGE"
+          gcloud run deploy sabeel-api --image "$IMAGE" --region ${{ env.REGION }} --project ${{ secrets.GCP_PROJECT }} \
+            --allow-unauthenticated --cpu 2 --memory 2Gi --min-instances 0 --max-instances 4 --port 8000 \
+            --set-env-vars "JOB_LOOP_INTERVAL_S=0,STORAGE_BACKEND=supabase,ONNX_INTRA_OP_THREADS=2,CORS_ORIGINS=${{ vars.WEB_URL }},PUBLIC_BASE_URL=${{ vars.WEB_URL }},RAG_SERVICE_URL=${{ vars.RAG_URL }}" \
+            --set-secrets "DATABASE_URL=sabeel-database-url:latest,SUPABASE_URL=sabeel-supabase-url:latest,SUPABASE_SERVICE_KEY=sabeel-supabase-key:latest,INTERNAL_TOKEN=sabeel-internal-token:latest"
+
+  rag:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.modified, 'rag-service/') }}
+    env:
+      HAS_GCP: ${{ secrets.GCP_SA_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - if: env.HAS_GCP == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - if: env.HAS_GCP == 'true'
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Build, push and deploy sabeel-rag
+        if: env.HAS_GCP == 'true'
+        run: |
+          IMAGE=${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/sabeel/rag:${{ github.sha }}
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+          docker build -t "$IMAGE" rag-service && docker push "$IMAGE"
+          gcloud run deploy sabeel-rag --image "$IMAGE" --region ${{ env.REGION }} --project ${{ secrets.GCP_PROJECT }} \
+            --no-allow-unauthenticated --cpu 1 --memory 2Gi --min-instances 0 --max-instances 2 --port 8001 \
+            --set-secrets "HF_API_TOKEN=sabeel-hf-token:latest,LLM_API_KEY=sabeel-llm-key:latest" \
+            --set-env-vars "LLM_BASE_URL=${{ vars.LLM_BASE_URL }},LLM_MODEL=${{ vars.LLM_MODEL }}"
+
+  web:
+    runs-on: ubuntu-latest
+    env:
+      HAS_CF: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ vars.API_URL }}
+          VITE_DEMO_LOGINS: ${{ vars.DEMO_LOGINS }}
+      - name: Deploy to Cloudflare Pages
+        if: env.HAS_CF == 'true'
+        run: npx wrangler@3 pages deploy dist --project-name sabeel --branch main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

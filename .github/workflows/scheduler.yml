@@ -1,0 +1,30 @@
+name: Scheduler
+
+# Cloud Run scales to zero and throttles CPU between requests, so background
+# work is triggered from here (free): every 10 minutes the pending jobs
+# (OSM enrichment, work sheets); once a day also the SLA escalation and the
+# rain forecast. Also keeps the API warm before demos (cahier §15.4).
+# Needs the repository variable API_URL and the secret INTERNAL_TOKEN.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      daily:
+        description: "Also run the daily SLA + weather pass"
+        type: boolean
+        default: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    if: ${{ vars.API_URL != '' }}
+    steps:
+      - name: Call /internal/run
+        env:
+          TOKEN: ${{ secrets.INTERNAL_TOKEN }}
+        run: |
+          DAILY=false
+          if [ "${{ github.event.inputs.daily }}" = "true" ] || [ "$(date -u +%H:%M | cut -c1-4)" = "05:0" ]; then DAILY=true; fi
+          curl -fsS -X POST -H "X-Internal-Token: $TOKEN" "${{ vars.API_URL }}/internal/run?daily=$DAILY"

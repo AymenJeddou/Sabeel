@@ -27,6 +27,7 @@ from typing import Any
 
 import httpx
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.config import settings
@@ -123,7 +124,8 @@ async def lookup(db: AsyncSession, lat: float, lon: float) -> dict[str, Any]:
             nominatim = await _nominatim(client, lat, lon)
     data = parse(nominatim, lat, lon)
     if data["source"] == "osm":
-        db.add(GeoCache(key=key, data=data))
+        # Two potholes in the same cell can be enriched at once: first one wins.
+        await db.execute(insert(GeoCache).values(key=key, data=data).on_conflict_do_nothing(index_elements=["key"]))
     return data
 
 
