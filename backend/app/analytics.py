@@ -121,8 +121,9 @@ def trend(potholes: list[Pothole], now: datetime, weeks: int = 12) -> list[dict[
     buckets = {first + timedelta(weeks=i): {"reported": 0, "confirmed": 0, "fixed": 0} for i in range(weeks)}
     for p in potholes:
         for field, when in (("reported", p.created_at), ("confirmed", p.confirmed_at), ("fixed", p.fixed_at)):
-            if when and when >= first:
-                buckets[week_start(when)][field] += 1
+            bucket = buckets.get(week_start(when)) if when and when >= first else None
+            if bucket is not None:  # ignores clock skew / future timestamps
+                bucket[field] += 1
     return [{"week": k.date().isoformat(), **v} for k, v in buckets.items()]
 
 

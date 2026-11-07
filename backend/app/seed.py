@@ -143,6 +143,10 @@ async def build(rng: random.Random, offices: dict[str, Office]) -> tuple[list, l
             photo = rng.choice(detected)
             kind = rng.choices(["fixed", "sheet_sent", "confirmed", "new"],
                                weights=[max(age - 8, 0), 30, 22, 14 if age < 10 else 2])[0]
+        if kind in ("confirmed", "sheet_sent", "new", "review"):
+            # Open potholes in a real city are mostly recent; old ones get fixed.
+            age = rng.uniform(0.5, 16)
+            created = now - timedelta(days=age)
         v = vision[photo]
         severity = v["score"] or rng.choice([2, 3])
         n_reports = 1 if kind in ("new", "review", "rejected") else rng.choice([2, 2, 3, 3, 4])
@@ -260,7 +264,7 @@ def synthetic(rng: random.Random, n: int, offices: dict[str, Office]) -> list[Po
                     severity=sev, report_count=1, device_count=rng.randint(1, 4), target_office_id=offices["mun-tunis"].office_id,
                     region="Tunis", municipality="Tunis", road_class="urbain_secondaire", address_label="Point synthétique",
                     created_at=created, updated_at=created, confirmed_at=created if status != "new" else None,
-                    fixed_at=created + timedelta(days=rng.uniform(1, 20)) if status == "fixed" else None,
+                    fixed_at=min(created + timedelta(days=rng.uniform(1, 20)), now) if status == "fixed" else None,
                     priority_components={})
         p.priority_score, p.priority_components = priority.compute(
             severity=sev, road_class=p.road_class, device_count=p.device_count, opened_at=created, now=now, status=status)

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { ago, api, citizen, go, initials, usePoll, type Conversation, type Report } from '../api'
-import { Icon, Severity, StatusBadge } from '../ui'
+import { ago, api, citizen, go, initials, usePoll, type Conversation } from '../api'
+import { Icon, Loading } from '../ui'
 
 const QUICK_REPLIES = [
   'Merci pour votre signalement, il est bien pris en compte.',
@@ -11,7 +11,7 @@ const QUICK_REPLIES = [
 
 const time = (iso: string) => new Date(iso).toLocaleString('fr-TN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 
-function Thread({ deviceId, reports, onSent }: { deviceId: string; reports: Report[]; onSent: () => void }) {
+function Thread({ deviceId, reports, onSent }: { deviceId: string; reports: number; onSent: () => void }) {
   const { data: messages, refresh } = usePoll(() => api.messages(deviceId), 4000, [deviceId])
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
@@ -30,7 +30,6 @@ function Thread({ deviceId, reports, onSent }: { deviceId: string; reports: Repo
       setSending(false)
     }
   }
-  const theirs = reports.filter((r) => r.device_id === deviceId)
 
   return (
     <>
@@ -39,7 +38,7 @@ function Thread({ deviceId, reports, onSent }: { deviceId: string; reports: Repo
           <span className="avatar">{initials(deviceId).slice(-2)}</span>
           <div>
             <b>{citizen(deviceId)}</b>
-            <div className="muted small">{theirs.length} signalement{theirs.length > 1 ? 's' : ''} · application mobile Sabeel</div>
+            <div className="muted small">{reports} signalement{reports > 1 ? 's' : ''} · application mobile Sabeel</div>
           </div>
         </header>
         <div className="bubbles">
@@ -70,32 +69,25 @@ function Thread({ deviceId, reports, onSent }: { deviceId: string; reports: Repo
       </section>
 
       <aside className="panel context">
-        <header className="panel-head"><div><div className="ref">Contexte</div><h3>Ses signalements</h3></div></header>
-        <ul className="pothole-list">
-          {theirs.map((r) => (
-            <li key={r.report_id} onClick={() => go('map', r.report_id)}>
-              {r.photo_url && <img src={r.photo_url} alt="" className="thumb" />}
-              <div className="grow">
-                <div className="row-between"><b className="mono">{r.ref}</b><span className="muted small">{ago(r.created_at)}</span></div>
-                <div className="ellipsis">{r.address ?? '—'}</div>
-                <div className="row-between"><StatusBadge status={r.status} /><Severity score={r.score} /></div>
-              </div>
-            </li>
-          ))}
-          {!theirs.length && <li className="muted">Aucun signalement lié à cet appareil.</li>}
-        </ul>
+        <header className="panel-head"><div><div className="ref">Contexte</div><h3>Citoyen anonyme</h3></div></header>
+        <div className="panel-body">
+          <p className="muted small">
+            Les citoyens n’ont pas de compte : cette conversation est liée à l’identifiant aléatoire de leur téléphone.
+            Aucune donnée personnelle (nom, numéro) n’est collectée.
+          </p>
+          <button className="btn ghost" onClick={() => go('queue')}><Icon name="list" size={15} /> Voir la file de travail</button>
+        </div>
       </aside>
     </>
   )
 }
 
-export default function Messages({ convos, reports, focus, onSent }: {
+export default function Messages({ convos, focus, onSent }: {
   convos: Conversation[] | null
-  reports: Report[] | null
   focus?: string
   onSent: () => void
 }) {
-  if (!convos || !reports) return <div className="loading">Chargement…</div>
+  if (!convos) return <Loading />
   const active = focus ?? convos[0]?.device_id
 
   return (
@@ -121,7 +113,7 @@ export default function Messages({ convos, reports, focus, onSent }: {
           ))}
         </ul>
       </aside>
-      {active ? <Thread key={active} deviceId={active} reports={reports} onSent={onSent} /> : <div className="empty">Aucune conversation.</div>}
+      {active ? <Thread key={active} deviceId={active} reports={convos.find((c) => c.device_id === active)?.reports ?? 0} onSent={onSent} /> : <div className="empty">Aucune conversation.</div>}
     </div>
   )
 }

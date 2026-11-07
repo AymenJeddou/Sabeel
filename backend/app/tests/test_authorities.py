@@ -84,6 +84,9 @@ def test_analytics_medians_and_scoping(client):
             self.road_class, self.lat, self.lon, self.confirm_count = "rural", 36.8, 10.1, 0
 
     rows = [P(2), P(4), P(10), P(None, "confirmed")]
+    future = P(1)
+    future.fixed_at = NOW + timedelta(days=3)  # clock skew must not crash the trend
+    assert sum(w["fixed"] for w in analytics.trend(rows + [future], NOW)) == 3
     s = analytics.summary(rows, NOW)
     assert s["time_to_fix_days"]["median"] == 4 and s["fixed"] == 3 and s["open"] == 1
     assert analytics.time_to_fix(rows, lambda p: p.region)[0]["median"] == 4
