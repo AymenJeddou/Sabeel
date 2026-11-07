@@ -33,7 +33,15 @@ function Rich({ text, refs }: { text: string; refs: Pothole[] }) {
   let items: ReactNode[] = []
   const flush = () => items.length && (blocks.push(<ul key={blocks.length}>{items}</ul>), (items = []))
   for (const line of text.split('\n')) {
+    // Markdown headings ("### 3. Next") become a bold line, never raw hashes.
+    const heading = line.match(/^\s*#{1,6}\s+(.*)/)
+    if (heading) {
+      flush()
+      blocks.push(<p key={blocks.length}><b>{inline(heading[1].replace(/\*\*/g, ''))}</b></p>)
+      continue
+    }
     const bullet = line.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)/)
+    if (bullet && !bullet[1].trim()) continue
     if (bullet) items.push(<li key={items.length}>{inline(bullet[1])}</li>)
     else {
       flush()

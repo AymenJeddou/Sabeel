@@ -47,7 +47,7 @@ Un nid de poule a été signalé et confirmé :
 Règles disponibles (cite UNIQUEMENT ces identifiants, n'invente jamais un identifiant qui n'est pas dans cette liste) :
 {context_block}
 
-Rédige une fiche de travaux courte (5-8 lignes) en français : nature du problème, gravité, méthode de réparation recommandée (d'après les règles techniques ci-dessus), signalisation, bureau responsable et base légale. Si aucune règle ci-dessus ne s'applique clairement, dis-le explicitement.
+Rédige une fiche de travaux courte (5-8 lignes) en français : nature du problème, gravité, méthode de réparation recommandée (d'après les règles techniques ci-dessus), signalisation, bureau responsable et base légale. Écris en texte brut, sans markdown (pas d'astérisques ni de titres). Si aucune règle ci-dessus ne s'applique clairement, dis-le explicitement.
 
 Termine ta réponse par une ligne exacte au format :
 Références: ID1, ID2

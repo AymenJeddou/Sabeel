@@ -87,3 +87,8 @@ def test_rate_limited_llm_gives_a_template_flagged_for_retry(monkeypatch):
 
     assert result["retry_after_s"] == 17 and result["llm_used"] is False
     assert "RULE_A" in result["sheet_text"]
+
+
+def test_stray_foreign_script_tokens_are_removed():
+    assert pipeline.clean_llm_text("compactage仔细. Références: A") == "compactage. Références: A"
+    assert pipeline.clean_llm_text("الطريق البلدي") == "الطريق البلدي"  # Arabic is kept

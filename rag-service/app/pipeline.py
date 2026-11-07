@@ -16,6 +16,7 @@ just because the LLM had a bad moment.
 from __future__ import annotations
 
 import logging
+import re
 import time
 from datetime import datetime, timezone
 
@@ -48,6 +49,16 @@ def _citations_from_chunks(chunks: list[dict]) -> list[dict]:
         }
         for c in chunks
     ]
+
+
+_FOREIGN_SCRIPT = re.compile(r"[\u2E80-\u9FFF\uAC00-\uD7AF\u3040-\u30FF\u0400-\u04FF]+")
+
+
+def clean_llm_text(text: str) -> str:
+    """Multilingual models sometimes slip a stray token from another script
+    into French text (seen: "compactage仔细"). Sheets are French or Arabic,
+    so CJK, kana, Hangul and Cyrillic characters are removed."""
+    return _FOREIGN_SCRIPT.sub("", text)
 
 
 def select_shown(chunks: list[dict], score: int, k: int) -> list[dict]:
@@ -95,6 +106,7 @@ def generate(
         target_office = pick_target_office(shown_chunks)
 
         if llm_output:
+            llm_output = clean_llm_text(llm_output)
             validated_text, matched_chunks = validate_citations(llm_output, shown_chunks)
             if validated_text is not None:
                 return _finalize(

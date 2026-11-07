@@ -60,7 +60,9 @@ def chat_endpoint(req: ChatRequest) -> dict:
         raise HTTPException(status_code=503, detail=str(exc), headers={"Retry-After": f"{exc.retry_after_s:.0f}"}) from exc
     if content is None:
         raise HTTPException(status_code=503, detail="LLM unavailable")
-    return {"content": content}
+    from .pipeline import clean_llm_text
+
+    return {"content": clean_llm_text(content)}
 
 
 if __name__ == "__main__":

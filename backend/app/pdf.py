@@ -93,8 +93,13 @@ def render_sheet_pdf(p: Pothole, office: Office | None) -> bytes:
         Paragraph(f'Carte : <a href="{osm}" color="#0F6E6A">{osm}</a>', small),
         Paragraph("Fiche", h2),
     ]
+    import re
+
     for line in (p.sheet_text or "").strip().splitlines():
-        story.append(Paragraph(line.replace("&", "&amp;").replace("<", "&lt;") or "&nbsp;", body))
+        safe = line.replace("&", "&amp;").replace("<", "&lt;")
+        safe = re.sub(r"^\s*[*-]\s+", "• ", safe)
+        safe = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", safe)  # LLM markdown bold
+        story.append(Paragraph(safe or "&nbsp;", body))
     story.append(Paragraph("Textes cités", h2))
     for c in p.sheet_citations or []:
         story.append(Paragraph(f"<b>{c.get('rule_id')}</b> · {c.get('source', '')}", body))
