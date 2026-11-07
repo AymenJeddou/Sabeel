@@ -1,13 +1,20 @@
-"""
-Report status state machine (Sprint1_Action_Plan.md, Section 4.2).
-Four states, forward-only transitions, plus REJECTED: an authority
-dismissing a false positive from the dashboard, allowed from any open state.
-WP3 owns enforcing this; WP4 only ever displays the current value.
+"""Pothole status state machine.
+
+    new ──> confirmed ──> sheet_sent ──> fixed ──> reopened
+                 │                          ▲         │
+                 └── (no sheet needed) ─────┘         ├──> sheet_sent
+                                                      └──> fixed
+    rejected: from any open state (an officer dismisses a false positive)
+
+- `sheet_sent` means an officer *approved* the work sheet (roadmap decision 4),
+  not that the LLM wrote it.
+- A pothole below the sheet threshold (severity 1-2) never gets a sheet, so it
+  may go straight from `confirmed` to `fixed`.
+- `reopened` is reached only from `fixed`, when citizens report the pothole is
+  still there (issue #22). It is an open state again.
 """
 
 from enum import Enum
-
-FORWARD_ORDER = ["new", "confirmed", "sheet_sent", "fixed"]
 
 
 class ReportStatus(str, Enum):
@@ -16,15 +23,27 @@ class ReportStatus(str, Enum):
     SHEET_SENT = "sheet_sent"
     FIXED = "fixed"
     REJECTED = "rejected"
+    REOPENED = "reopened"
 
 
-def is_valid_transition(current: ReportStatus, new: ReportStatus) -> bool:
-    """True only if `new` is strictly the next state after `current` in the
-    forward chain, or a rejection of a report that isn't closed yet."""
-    if new == ReportStatus.REJECTED:
-        return current in (ReportStatus.NEW, ReportStatus.CONFIRMED, ReportStatus.SHEET_SENT)
-    if current == ReportStatus.REJECTED:
-        return False
-    current_index = FORWARD_ORDER.index(current.value)
-    new_index = FORWARD_ORDER.index(new.value)
-    return new_index == current_index + 1
+S = ReportStatus
+OPEN_STATUSES = (S.NEW, S.CONFIRMED, S.SHEET_SENT, S.REOPENED)
+
+_FORWARD = {
+    S.NEW: {S.CONFIRMED},
+    S.CONFIRMED: {S.SHEET_SENT},
+    S.SHEET_SENT: {S.FIXED},
+    S.FIXED: {S.REOPENED},
+    S.REOPENED: {S.SHEET_SENT, S.FIXED},
+    S.REJECTED: set(),
+}
+
+
+def is_valid_transition(current: ReportStatus, new: ReportStatus, sheet_required: bool = True) -> bool:
+    """True if `new` may follow `current`. Anything else is answered with HTTP 409."""
+    current, new = S(current), S(new)
+    if new == S.REJECTED:
+        return current in OPEN_STATUSES
+    if current == S.CONFIRMED and new == S.FIXED:
+        return not sheet_required
+    return new in _FORWARD[current]
