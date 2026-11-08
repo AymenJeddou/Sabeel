@@ -15,3 +15,15 @@ def test_wait_is_at_least_one_second():
     ratelimit.reset()
     ratelimit.hit("k", 1, 60, now=0)
     assert ratelimit.hit("k", 1, 60, now=59.9) == 1
+
+
+def test_client_ip_cannot_be_spoofed_with_x_forwarded_for():
+    from starlette.requests import Request
+
+    def req(fwd):
+        headers = [(b"x-forwarded-for", fwd.encode())] if fwd else []
+        return Request({"type": "http", "headers": headers, "client": ("10.0.0.9", 1)})
+
+    assert ratelimit._client_ip(req("1.2.3.4, 41.226.0.7")) == "41.226.0.7"
+    assert ratelimit._client_ip(req("41.226.0.7")) == "41.226.0.7"
+    assert ratelimit._client_ip(req("")) == "10.0.0.9"

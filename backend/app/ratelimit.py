@@ -37,9 +37,10 @@ def hit(key: str, max_calls: int, window_s: float, now: float | None = None) -> 
 
 
 def _client_ip(request: Request) -> str:
-    # Cloud Run puts the real client first in X-Forwarded-For.
+    # The proxy in front of us (Cloud Run, Hugging Face) appends the address it saw, so the
+    # last entry is the real client; the first one is whatever the client chose to send.
     fwd = request.headers.get("x-forwarded-for")
-    return fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "?")
+    return fwd.split(",")[-1].strip() if fwd else (request.client.host if request.client else "?")
 
 
 def limit(name: str, max_calls: int, window_s: float, by: str = "ip"):
