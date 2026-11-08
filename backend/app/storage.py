@@ -19,6 +19,12 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 PHOTOS_DIR = STATIC_DIR / "photos"
 
 
+def _local(url: str, root: Path) -> Path | None:
+    """The file a /static/... URL names, or None if it would leave `root` (../ tricks)."""
+    path = (STATIC_DIR / url.removeprefix("/static/")).resolve()
+    return path if path.is_relative_to(root.resolve()) else None
+
+
 def _supabase_object(key: str) -> str:
     return f"{settings.supabase_url}/storage/v1/object/{settings.supabase_bucket}/{key}"
 
@@ -50,7 +56,8 @@ async def delete(url: str | None) -> None:
         return
     try:
         if url.startswith("/static/photos/"):
-            (PHOTOS_DIR / url.removeprefix("/static/photos/")).unlink(missing_ok=True)
+            if path := _local(url, PHOTOS_DIR):
+                path.unlink(missing_ok=True)
         elif settings.storage_backend == "supabase" and "/object/public/" in url:
             key = url.split(f"/object/public/{settings.supabase_bucket}/", 1)[1]
             async with httpx.AsyncClient(timeout=20) as client:
@@ -65,7 +72,8 @@ async def read(url: str) -> bytes | None:
     """Photo bytes for a stored URL (used to re-run the model on a photo)."""
     try:
         if url.startswith("/static/"):
-            return (STATIC_DIR / url.removeprefix("/static/")).read_bytes()
+            path = _local(url, STATIC_DIR)
+            return path.read_bytes() if path else None
         async with httpx.AsyncClient(timeout=20) as client:
             r = await client.get(url)
         r.raise_for_status()
