@@ -27,3 +27,12 @@ def test_client_ip_cannot_be_spoofed_with_x_forwarded_for():
     assert ratelimit._client_ip(req("1.2.3.4, 41.226.0.7")) == "41.226.0.7"
     assert ratelimit._client_ip(req("41.226.0.7")) == "41.226.0.7"
     assert ratelimit._client_ip(req("")) == "10.0.0.9"
+
+
+def test_idle_keys_are_swept(monkeypatch):
+    ratelimit.reset()
+    monkeypatch.setattr(ratelimit, "SWEEP_AT", 3)
+    for i in range(4):
+        ratelimit.hit(f"old{i}", 5, 60, now=0)
+    ratelimit.hit("fresh", 5, 60, now=ratelimit.MAX_WINDOW_S + 1)
+    assert set(ratelimit._hits) == {"fresh"}
