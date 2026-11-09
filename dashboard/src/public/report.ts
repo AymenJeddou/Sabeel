@@ -51,6 +51,7 @@ export async function downscale(file: Blob, max = 1600): Promise<Blob> {
   canvas.width = Math.round(bitmap.width * scale)
   canvas.height = Math.round(bitmap.height * scale)
   canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close() // a 12 MP photo holds ~48 MB until released; phones run out on the second shot
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode failed'))), 'image/jpeg', 0.8))
 }
 
