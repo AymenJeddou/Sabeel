@@ -16,3 +16,7 @@ def test_read_and_delete_refuse_traversal():
     assert asyncio.run(storage.read("/static/../config.py")) is None
     asyncio.run(storage.delete("/static/photos/../../config.py"))
     assert victim.exists()
+
+
+def test_read_never_fetches_foreign_urls():
+    assert asyncio.run(storage.read("http://169.254.169.254/latest/meta-data/")) is None

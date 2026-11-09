@@ -74,6 +74,8 @@ async def read(url: str) -> bytes | None:
         if url.startswith("/static/"):
             path = _local(url, STATIC_DIR)
             return path.read_bytes() if path else None
+        if not (settings.supabase_url and url.startswith(f"{settings.supabase_url}/storage/")):
+            return None  # only our own bucket: never fetch an arbitrary URL from the server
         async with httpx.AsyncClient(timeout=20) as client:
             r = await client.get(url)
         r.raise_for_status()
