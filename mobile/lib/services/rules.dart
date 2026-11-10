@@ -46,7 +46,8 @@ double distanceM(double lat1, double lon1, double lat2, double lon2) {
       math.cos(_rad(lat1)) *
           math.cos(_rad(lat2)) *
           math.pow(math.sin(dLon / 2), 2);
-  return 2 * _earthM * math.asin(math.sqrt(a.toDouble()));
+  // Rounding can push a just above 1 for near-antipodal points: asin would return NaN.
+  return 2 * _earthM * math.asin(math.min(1.0, math.sqrt(a.toDouble())));
 }
 
 /// Initial bearing from point 1 to point 2, 0-360°.
