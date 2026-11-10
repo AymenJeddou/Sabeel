@@ -779,6 +779,8 @@ Chunking is **semantic**: one chunk per article or clause; chunks above 300 word
 - Compliance with **Law 2004-63** on personal data; location data describes the road, not the person's trips.
 - Photos are deleted when the sheet is approved, except the clearest one, kept as a training label (AD-14). Public endpoints never return photos, device ids or exact times (enforced by a test).
 - Driving mode discards empty frames on the device and never stores whole trips.
+- Rate limits (NFR-6) key on the client address added by the hosting proxy (the last `X-Forwarded-For` entry), so a client cannot dodge them by sending its own header; idle keys are dropped so memory stays bounded.
+- Stored photo URLs are resolved only inside the photo folder or the project's own storage bucket: a crafted path or an outside URL is never read or deleted.
 
 ---
 
