@@ -13,6 +13,9 @@ COPY backend/__init__.py ./backend/__init__.py
 COPY backend/app ./backend/app
 COPY ml-training/inference.py ml-training/severity_scoring.py ./ml-training/
 COPY ml-training/models ./ml-training/models
+# Run as an unprivileged user; it only needs to write local photos (dev storage backend).
+RUN useradd --create-home --uid 1000 sabeel  && mkdir -p backend/app/static/photos && chown -R sabeel backend/app/static/photos
+USER sabeel
 ENV PORT=8000 PYTHONUNBUFFERED=1
 EXPOSE 8000
 # Migrations run on startup (main.py lifespan).
