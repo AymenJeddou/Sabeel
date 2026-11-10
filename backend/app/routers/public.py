@@ -25,6 +25,7 @@ from backend.app.serialize import office_map, office_name, public_pothole
 
 router = APIRouter(prefix="/public", tags=["public"], dependencies=[Depends(limit("public", 120, 60))])
 CACHE_S = 300
+CACHE_MAX = 500
 _cache: dict[str, tuple[float, object]] = {}
 
 
@@ -37,7 +38,13 @@ async def _cached(key: str, build):
     if hit and time.monotonic() - hit[0] < CACHE_S:
         return hit[1]
     value = await build()
-    _cache[key] = (time.monotonic(), value)
+    now = time.monotonic()
+    if len(_cache) >= CACHE_MAX:  # every map viewport is its own key: keep memory bounded
+        for k in [k for k, (t, _) in _cache.items() if now - t >= CACHE_S]:
+            del _cache[k]
+        if len(_cache) >= CACHE_MAX:
+            _cache.clear()
+    _cache[key] = (now, value)
     return value
 
 
