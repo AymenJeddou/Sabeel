@@ -34,8 +34,11 @@ double? _sharpness(String path) {
 Future<Uint8List?> shrinkForDetection(String path) => compute(_shrink, path);
 
 Uint8List? _shrink(String path) {
-  final decoded = img.decodeImage(File(path).readAsBytesSync());
-  if (decoded == null) return null;
+  final raw = img.decodeImage(File(path).readAsBytesSync());
+  if (raw == null) return null;
+  // Phones store portrait shots sideways plus an EXIF rotation tag; re-encoding drops the
+  // tag, so apply it first or the model sees the road on its side.
+  final decoded = img.bakeOrientation(raw);
   final resized = decoded.width > 640
       ? img.copyResize(decoded, width: 640)
       : decoded;
