@@ -298,8 +298,12 @@ export function usePoll<T>(load: () => Promise<T>, everyMs = 15000, deps: unknow
   useEffect(() => {
     refresh()
     if (!everyMs) return
-    const t = setInterval(refresh, everyMs)
-    return () => clearInterval(t)
+    // A background tab doesn't poll (it would spend the office's rate limit for nothing);
+    // it catches up as soon as it is shown again.
+    const t = setInterval(() => document.hidden || refresh(), everyMs)
+    const onShow = () => document.hidden || refresh()
+    document.addEventListener('visibilitychange', onShow)
+    return () => (clearInterval(t), document.removeEventListener('visibilitychange', onShow))
   }, [refresh, everyMs])
   return { data, error, refresh }
 }
