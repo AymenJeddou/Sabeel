@@ -18,5 +18,6 @@ RUN useradd --create-home --uid 1000 sabeel  && mkdir -p backend/app/static/phot
 USER sabeel
 ENV PORT=8000 PYTHONUNBUFFERED=1
 EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3   CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.environ[\"PORT\"]}/health', timeout=4)"
 # Migrations run on startup (main.py lifespan).
 CMD ["sh", "-c", "uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips='*'"]
