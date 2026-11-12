@@ -36,3 +36,15 @@ def test_idle_keys_are_swept(monkeypatch):
         ratelimit.hit(f"old{i}", 5, 60, now=0)
     ratelimit.hit("fresh", 5, 60, now=ratelimit.MAX_WINDOW_S + 1)
     assert set(ratelimit._hits) == {"fresh"}
+
+
+def test_assistant_history_is_bounded():
+    import pytest
+    from pydantic import ValidationError
+
+    from backend.app.schemas import AssistantRequest
+
+    turn = {"role": "user", "content": "x"}
+    assert len(AssistantRequest(question="q", history=[turn] * 20).history) == 20
+    with pytest.raises(ValidationError):
+        AssistantRequest(question="q", history=[turn] * 21)

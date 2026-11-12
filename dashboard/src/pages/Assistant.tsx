@@ -71,7 +71,7 @@ export default function Assistant() {
 
   const ask = async (question: string) => {
     if (!question.trim() || thinking) return
-    const history = turns.map(({ role, content }) => ({ role, content }))
+    const history = turns.slice(-6).map(({ role, content }) => ({ role, content })) // the API reads the last 6
     setTurns((t) => [...t, { role: 'user', content: question.trim() }])
     setDraft('')
     setThinking(true)

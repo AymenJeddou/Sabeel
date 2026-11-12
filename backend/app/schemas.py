@@ -236,7 +236,8 @@ class AssistantTurn(BaseModel):
 
 class AssistantRequest(BaseModel):
     question: str = Field(min_length=1, max_length=1000)
-    history: list[AssistantTurn] = []
+    # Only the last 6 turns reach the prompt; a longer list is refused instead of parsed.
+    history: list[AssistantTurn] = Field(default_factory=list, max_length=20)
 
 
 class AssistantReply(BaseModel):
