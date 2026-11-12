@@ -70,11 +70,14 @@ def render_sheet_pdf(p: Pothole, office: Office | None) -> bytes:
     small = ParagraphStyle("small", parent=ss["Normal"], fontSize=8, textColor=colors.HexColor("#555555"))
     body = ParagraphStyle("body", parent=ss["Normal"], fontSize=10, leading=14)
     h2 = ParagraphStyle("h2", parent=ss["Heading3"], textColor=BRAND, spaceBefore=10)
+    cell = ParagraphStyle("cell", parent=ss["Normal"], fontName="Helvetica", fontSize=9, leading=11)
 
     osm = f"https://www.openstreetmap.org/?mlat={p.lat:.6f}&mlon={p.lon:.6f}#map=19/{p.lat:.6f}/{p.lon:.6f}"
     facts = [
         ["Référence", p.ref, "Sévérité", SEVERITY_FR.get(p.severity or 0, "—")],
-        ["Adresse", p.address_label or "—", "Route", " ".join(x for x in (p.road_ref, p.road_name) if x) or "—"],
+        # Paragraphs wrap; a long address in a plain cell runs off the page.
+        ["Adresse", Paragraph(_x(p.address_label or "—"), cell), "Route",
+         Paragraph(_x(" ".join(x for x in (p.road_ref, p.road_name) if x) or "—"), cell)],
         ["Position", f"{p.lat:.6f}, {p.lon:.6f}", "Type", p.road_type or "—"],
         ["Bureau", office.name if office else "—", "Signalements", f"{p.report_count} ({p.device_count} citoyens)"],
         ["Confirmé le", _fmt(p.confirmed_at), "Échéance", _fmt(p.sla_due_at)],
