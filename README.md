@@ -138,9 +138,9 @@ Dashboard demo logins: `demo-mun-tunis`, `demo-dre-tunis`, `demo-ministry`.
 
 | | |
 |---|---|
-| Core API | 83 tests on an isolated PostGIS database, no network (OSM answers recorded) |
-| RAG | 14 tests, no LLM or index needed |
-| Web | typecheck, Vitest, build |
+| Core API | 105 tests on an isolated PostGIS database, no network (OSM answers recorded) |
+| RAG | 18 tests, no LLM or index needed |
+| Web | typecheck, Vitest (contract and offline queue), build |
 | Mobile | `flutter analyze` clean, 35 tests |
 | ML | severity self-check, model smoke test |
 | End to end | `python -m backend.app.scripts.e2e_smoke` walks the whole demo path |
