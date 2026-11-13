@@ -41,3 +41,8 @@ def test_validate_citations_rejects_missing_trailer():
     validated_text, matched = validate_citations("Body with no references line.", allowlist)
     assert validated_text is None
     assert matched == []
+
+
+def test_trailer_is_the_last_reference_line_and_markdown_is_ignored():
+    text = "Selon la Référence : art. 3 de la loi...\n\n**Références** : `R1`, `R2`; R1."
+    assert extract_claimed_ids(text) == ["R1", "R2"]
