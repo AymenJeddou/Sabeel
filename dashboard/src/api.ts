@@ -321,8 +321,10 @@ export const severityColor = (score: number | null) =>
 export const FIXED_COLOR = '#1A9E8F'
 
 const rtf = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' })
-export function ago(iso: string) {
-  const mins = (new Date(iso).getTime() - Date.now()) / 60000
+export function ago(iso: string | null | undefined) {
+  const t = iso ? new Date(iso).getTime() : NaN
+  if (Number.isNaN(t)) return '—' // a missing or malformed timestamp, not "NaN days ago"
+  const mins = (t - Date.now()) / 60000
   if (Math.abs(mins) < 60) return rtf.format(Math.round(mins), 'minute')
   if (Math.abs(mins) < 1440) return rtf.format(Math.round(mins / 60), 'hour')
   return rtf.format(Math.round(mins / 1440), 'day')
