@@ -13,6 +13,13 @@ Duration backoffFor(int attempts) {
   return steps[math.min(math.max(attempts - 1, 0), steps.length - 1)];
 }
 
+/// When to retry: the backoff schedule, or the server's Retry-After if longer
+/// (retrying earlier would only be refused again).
+Duration retryDelay(int attempts, Duration? retryAfter) {
+  final backoff = backoffFor(attempts);
+  return retryAfter != null && retryAfter > backoff ? retryAfter : backoff;
+}
+
 /// Statuses that deserve a notification, with the message to show.
 const notifyMessages = {
   'confirmed': 'Votre signalement est confirmé par d’autres citoyens.',
