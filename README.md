@@ -147,6 +147,14 @@ Dashboard demo logins: `demo-mun-tunis`, `demo-dre-tunis`, `demo-ministry`.
 
 Measured locally: report round trip **0.4–0.75 s** (target < 3 s), inference **114 ms** (target < 250 ms), every dashboard endpoint < 0.3 s on 5,000 potholes.
 
+## Security and privacy
+
+- Photos: EXIF and GPS tags stripped, faces and plates blurred before storage; public endpoints never return photos, device ids or exact times.
+- Rate limits on every route, keyed on the address the hosting proxy saw (a client can't reset them with its own `X-Forwarded-For`).
+- Officer tokens are stored only as SHA-256 hashes; each office sees only the potholes routed to it.
+- Stored photo paths can't leave the photo folder or the project's bucket; work-order PDFs and CSV exports escape officer and OpenStreetMap text (no broken PDFs, no spreadsheet formulas).
+- Approved work orders carry a fingerprint and a QR code that anyone can check on the public verify page.
+
 ## Documentation
 
 [Cahier des charges](docs/Cahier_de_charges.md) · [Deployment](docs/DEPLOYMENT.md) · [Core API](backend/app/README.md) · [OSM routing](backend/app/geo/README.md) · [Model report](ml-training/MODEL_REPORT.md) · [RAG](rag-service/README.md) · [Mobile](mobile/README.md) · [Web](dashboard/README.md) · [Sprint 1 contracts](docs/Sprint1_Action_Plan.md)
