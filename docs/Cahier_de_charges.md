@@ -204,7 +204,7 @@ Six features (F1–F6) are specified below. Each has a user story, functional ru
 3. An offline report is delivered after connectivity returns, exactly once.
 4. Open app → report sent takes less than 15 s.
 
-**Status:** ✅ One-tap capture (GPS and compass started with the camera, 5 s undo, blur check) and a detailed mode in the app; the same report from any phone browser (PWA, `source = web`). Every report is stored on the phone and retried with backoff (30 s, 2 min, 10 min, 1 h) on start, reconnection and every 30 s; `POST /reports` is idempotent on `device_report_id`, so a retry never duplicates. Without a detection the API answers `detected: false` and the citizen chooses "Reprendre" or "Envoyer quand même" (`force=true`). Above 40 km/h nothing is rejected. Measured round trip: 0.4–0.75 s.
+**Status:** ✅ One-tap capture (GPS and compass started with the camera, 5 s undo, blur check) and a detailed mode in the app; the same report from any phone browser (PWA, `source = web`). Every report is stored on the phone and retried with backoff (30 s, 2 min, 10 min, 1 h, or the server's `Retry-After` when a rate limit asks for longer) on start, reconnection and every 30 s; `POST /reports` is idempotent on `device_report_id`, so a retry never duplicates. Without a detection the API answers `detected: false` and the citizen chooses "Reprendre" or "Envoyer quand même" (`force=true`). Above 40 km/h nothing is rejected. Measured round trip: 0.4–0.75 s.
 
 ### 5.3 F2 — Map with filters and deduplication
 
