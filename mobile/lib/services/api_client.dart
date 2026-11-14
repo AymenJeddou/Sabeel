@@ -14,10 +14,13 @@ import 'device.dart';
 /// Thrown when the Core API is unreachable or answers with an error.
 /// [statusCode] is null when the server could not be reached at all.
 class ApiClientException implements Exception {
-  const ApiClientException(this.message, {this.statusCode});
+  const ApiClientException(this.message, {this.statusCode, this.retryAfter});
 
   final String message;
   final int? statusCode;
+
+  /// The server's Retry-After on a 429 (rate limit), if it sent one.
+  final Duration? retryAfter;
 
   /// Worth retrying later (offline, timeout, server trouble, rate limit).
   bool get retryable =>
@@ -95,9 +98,11 @@ class RoadScanApiClient {
     request.files.add(await http.MultipartFile.fromPath('photo', photoPath));
     final response = await http.Response.fromStream(await request.send());
     if (response.statusCode == 429) {
-      throw const ApiClientException(
+      final seconds = int.tryParse(response.headers['retry-after'] ?? '');
+      throw ApiClientException(
         'Trop de signalements, réessai plus tard.',
         statusCode: 429,
+        retryAfter: seconds == null ? null : Duration(seconds: seconds),
       );
     }
     if (response.statusCode != 201 && response.statusCode != 200) {

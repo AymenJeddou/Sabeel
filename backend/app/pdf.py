@@ -9,6 +9,7 @@ the paper can scan it and see whether it matches what was approved in Sabeel.
 from __future__ import annotations
 
 import hashlib
+import html
 import io
 import json
 from datetime import datetime
@@ -51,6 +52,11 @@ def _qr(url: str, size: float = 30 * mm) -> Drawing:
     return d
 
 
+def _x(s: object) -> str:
+    """Text for a ReportLab Paragraph, which parses <tags> and &entities."""
+    return html.escape(str(s), quote=True)
+
+
 def _fmt(dt: datetime | None) -> str:
     return dt.strftime("%d/%m/%Y %H:%M UTC") if dt else "—"
 
@@ -64,11 +70,14 @@ def render_sheet_pdf(p: Pothole, office: Office | None) -> bytes:
     small = ParagraphStyle("small", parent=ss["Normal"], fontSize=8, textColor=colors.HexColor("#555555"))
     body = ParagraphStyle("body", parent=ss["Normal"], fontSize=10, leading=14)
     h2 = ParagraphStyle("h2", parent=ss["Heading3"], textColor=BRAND, spaceBefore=10)
+    cell = ParagraphStyle("cell", parent=ss["Normal"], fontName="Helvetica", fontSize=9, leading=11)
 
     osm = f"https://www.openstreetmap.org/?mlat={p.lat:.6f}&mlon={p.lon:.6f}#map=19/{p.lat:.6f}/{p.lon:.6f}"
     facts = [
         ["Référence", p.ref, "Sévérité", SEVERITY_FR.get(p.severity or 0, "—")],
-        ["Adresse", p.address_label or "—", "Route", " ".join(x for x in (p.road_ref, p.road_name) if x) or "—"],
+        # Paragraphs wrap; a long address in a plain cell runs off the page.
+        ["Adresse", Paragraph(_x(p.address_label or "—"), cell), "Route",
+         Paragraph(_x(" ".join(x for x in (p.road_ref, p.road_name) if x) or "—"), cell)],
         ["Position", f"{p.lat:.6f}, {p.lon:.6f}", "Type", p.road_type or "—"],
         ["Bureau", office.name if office else "—", "Signalements", f"{p.report_count} ({p.device_count} citoyens)"],
         ["Confirmé le", _fmt(p.confirmed_at), "Échéance", _fmt(p.sla_due_at)],
@@ -87,19 +96,24 @@ def render_sheet_pdf(p: Pothole, office: Office | None) -> bytes:
     story = [
         Paragraph("Fiche de travaux · Sabeel", h1),
         Paragraph(f"Généré le {_fmt(p.sheet_generated_at)} · approuvé le {_fmt(p.sheet_approved_at)}"
-                  f" par {p.sheet_approved_by or '—'}", small),
+                  f" par {_x(p.sheet_approved_by or '—')}", small),
         Spacer(1, 6 * mm),
         table,
-        Paragraph(f'Carte : <a href="{osm}" color="#0F6E6A">{osm}</a>', small),
+        Paragraph(f'Carte : <a href="{_x(osm)}" color="#0F6E6A">{_x(osm)}</a>', small),
         Paragraph("Fiche", h2),
     ]
+    import re
+
     for line in (p.sheet_text or "").strip().splitlines():
-        story.append(Paragraph(line.replace("&", "&amp;").replace("<", "&lt;") or "&nbsp;", body))
+        safe = line.replace("&", "&amp;").replace("<", "&lt;")
+        safe = re.sub(r"^\s*[*-]\s+", "• ", safe)
+        safe = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", safe)  # LLM markdown bold
+        story.append(Paragraph(safe or "&nbsp;", body))
     story.append(Paragraph("Textes cités", h2))
     for c in p.sheet_citations or []:
-        story.append(Paragraph(f"<b>{c.get('rule_id')}</b> · {c.get('source', '')}", body))
+        story.append(Paragraph(f"<b>{_x(c.get('rule_id'))}</b> · {_x(c.get('source', ''))}", body))
         if c.get("excerpt"):
-            story.append(Paragraph(f"<i>« {c['excerpt'].replace('<', '&lt;')}… »</i>", small))
+            story.append(Paragraph(f"<i>« {_x(c['excerpt'])}… »</i>", small))
     if not p.sheet_citations:
         story.append(Paragraph("Aucune citation.", small))
 
@@ -108,7 +122,7 @@ def render_sheet_pdf(p: Pothole, office: Office | None) -> bytes:
     footer = Table(
         [[_qr(verify_url(p)), Paragraph(
             f"<b>Empreinte : {fp}</b><br/>Scannez le code pour vérifier que cette fiche correspond à la version "
-            f"approuvée dans Sabeel.<br/>{verify_url(p)}", small)]],
+            f"approuvée dans Sabeel.<br/>{_x(verify_url(p))}", small)]],
         colWidths=[34 * mm, 140 * mm],
     )
     footer.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))

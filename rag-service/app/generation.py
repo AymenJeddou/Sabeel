@@ -47,7 +47,7 @@ Un nid de poule a été signalé et confirmé :
 Règles disponibles (cite UNIQUEMENT ces identifiants, n'invente jamais un identifiant qui n'est pas dans cette liste) :
 {context_block}
 
-Rédige une fiche de travaux courte (5-8 lignes) en français : nature du problème, gravité, méthode de réparation recommandée (d'après les règles techniques ci-dessus), signalisation, bureau responsable et base légale. Si aucune règle ci-dessus ne s'applique clairement, dis-le explicitement.
+Rédige une fiche de travaux courte (5-8 lignes) en français : nature du problème, gravité, méthode de réparation recommandée (d'après les règles techniques ci-dessus), signalisation, bureau responsable et base légale. Écris en texte brut, sans markdown (pas d'astérisques ni de titres). Si aucune règle ci-dessus ne s'applique clairement, dis-le explicitement.
 
 Termine ta réponse par une ligne exacte au format :
 Références: ID1, ID2
@@ -68,6 +68,22 @@ def _do_chat_completion(prompt: str, timeout_s: float, model: str, max_tokens: i
         max_tokens=max_tokens,
     )
     return response.choices[0].message.content
+
+
+class LLMRateLimited(Exception):
+    """The provider's per-minute quota is used up; try again after `retry_after_s`."""
+
+    def __init__(self, retry_after_s: float):
+        super().__init__(f"LLM rate-limited, retry after {retry_after_s:.0f} s")
+        self.retry_after_s = retry_after_s
+
+
+def _retry_after(exc: Exception) -> float:
+    headers = getattr(getattr(exc, "response", None), "headers", None) or {}
+    try:
+        return float(headers.get("retry-after", 30))
+    except (TypeError, ValueError):
+        return 30.0
 
 
 def call_llm(
@@ -94,6 +110,9 @@ def call_llm(
         logger.warning("HF Inference API call exceeded %.1fs wall-clock timeout; falling back.", timeout_s)
         return None
     except HfHubHTTPError as exc:
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        if status == 429:
+            raise LLMRateLimited(_retry_after(exc)) from exc
         logger.warning("HF Inference API call failed: %s", exc)
         return None
     except Exception as exc:  # noqa: BLE001 - any failure must fall back cleanly

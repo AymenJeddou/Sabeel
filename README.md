@@ -130,20 +130,30 @@ cd dashboard && npm install && npm run dev            # http://localhost:5173
 cd mobile && flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
 ```
 
-Dashboard demo logins: `demo-mun-tunis`, `demo-dre-tunis`, `demo-ministry`. Production setup (Cloud Run, Supabase, Cloudflare Pages, all free tiers): [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+Dashboard demo logins: `demo-mun-tunis`, `demo-dre-tunis`, `demo-ministry`.
+
+**Deploy for free in about 30 minutes:** one Hugging Face Space (API, RAG and web app in one container) plus Supabase (database and photos). No credit card. Step by step: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Quality
 
 | | |
 |---|---|
-| Core API | 83 tests on an isolated PostGIS database, no network (OSM answers recorded) |
-| RAG | 14 tests, no LLM or index needed |
-| Web | typecheck, Vitest, build |
+| Core API | 105 tests on an isolated PostGIS database, no network (OSM answers recorded) |
+| RAG | 18 tests, no LLM or index needed |
+| Web | typecheck, Vitest (contract and offline queue), build |
 | Mobile | `flutter analyze` clean, 35 tests |
 | ML | severity self-check, model smoke test |
 | End to end | `python -m backend.app.scripts.e2e_smoke` walks the whole demo path |
 
 Measured locally: report round trip **0.4–0.75 s** (target < 3 s), inference **114 ms** (target < 250 ms), every dashboard endpoint < 0.3 s on 5,000 potholes.
+
+## Security and privacy
+
+- Photos: EXIF and GPS tags stripped, faces and plates blurred before storage; public endpoints never return photos, device ids or exact times.
+- Rate limits on every route, keyed on the address the hosting proxy saw (a client can't reset them with its own `X-Forwarded-For`).
+- Officer tokens are stored only as SHA-256 hashes; each office sees only the potholes routed to it.
+- Stored photo paths can't leave the photo folder or the project's bucket; work-order PDFs and CSV exports escape officer and OpenStreetMap text (no broken PDFs, no spreadsheet formulas).
+- Approved work orders carry a fingerprint and a QR code that anyone can check on the public verify page.
 
 ## Documentation
 

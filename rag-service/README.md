@@ -32,13 +32,17 @@ Any OpenAI-compatible chat endpoint works:
 | Provider | Settings |
 |---|---|
 | Hugging Face router (default) | `HF_API_TOKEN`, `HF_MODEL_PRIMARY`, `HF_MODEL_BACKUP` |
-| Groq (free tier) | `LLM_BASE_URL=https://api.groq.com/openai/v1`, `LLM_API_KEY`, `LLM_MODEL=llama-3.1-8b-instant`, `LLM_MODEL_BACKUP=llama-3.3-70b-versatile` |
+| Groq (free tier, **in use**) | `LLM_BASE_URL=https://api.groq.com/openai/v1`, `LLM_API_KEY`, `LLM_MODEL=qwen/qwen3.8-27b`, `LLM_MODEL_BACKUP=qwen/qwen3.8-27b` |
 | OpenRouter (free models) | `LLM_BASE_URL=https://openrouter.ai/api/v1`, `LLM_API_KEY`, `LLM_MODEL=<model id>` |
 
-Status on 2026-11-07: the project's Hugging Face token answers **402 Payment
-Required** (monthly free credits used up), so every sheet currently comes from
-the template. The template is a complete work order (competent office and its
-legal basis, urgency, repair method, signage), but it is not written by a model.
+Status on 2026-11-07: the Hugging Face token answers 402 (no credits), so the
+project uses **Groq's free tier with `qwen/qwen3.8-27b`**: about 10 s per sheet
+with valid citations, about 1 s per assistant answer. Groq no longer serves
+the Llama 3.x models on this account. `openai/gpt-oss-20b` and `gpt-oss-120b`
+were tested too: for sheets their reasoning tokens exhaust the budget (the
+template takes over); for chat they work but write references with a
+non-breaking hyphen (the Core API normalises it). If the LLM is down, the
+template is still a complete work order built only from the rules' text.
 
 ## Rule corpus (`rules_real/`)
 

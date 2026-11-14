@@ -48,7 +48,7 @@ def score_from_detections(
     boxes: dicts with keys x, y, w, h, conf. source: the report's capture mode.
     """
     valid = [b for b in boxes if b.get("conf", 0) >= conf_threshold]
-    if not valid:
+    if not valid or image_width <= 0 or image_height <= 0:  # a corrupt frame has no size
         return 0
     rel = max(b["w"] * b["h"] for b in valid) / float(image_width * image_height)
     bands = BANDS[MODE_FOR_SOURCE.get(source, "close_up")]
@@ -63,4 +63,5 @@ if __name__ == "__main__":
     assert score_from_detections(box(0.02), 100, 100, source="driving_mode") == 3
     assert score_from_detections(box(0.50), 100, 100, source="web") == 5
     assert score_from_detections(box(0.10), 100, 100, source="manual") == 3
+    assert score_from_detections(box(0.10), 0, 100) == 0
     print("severity_scoring self-check passed")

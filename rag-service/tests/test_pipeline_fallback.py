@@ -72,3 +72,23 @@ def test_generate_never_raises_on_internal_error(monkeypatch):
     assert result["rule_citations"] == []
     assert result["target_office"] == "Municipality"
     assert result["generation_ms"] >= 0
+
+
+def test_rate_limited_llm_gives_a_template_flagged_for_retry(monkeypatch):
+    from app.generation import LLMRateLimited
+
+    def limited(prompt):
+        raise LLMRateLimited(17)
+
+    monkeypatch.setattr(pipeline, "retrieve_chunks", lambda road_type, score, top_k=None, jurisdiction=None: [_chunk("RULE_A")])
+    monkeypatch.setattr(pipeline, "call_llm", limited)
+
+    result = pipeline.generate(lat=36.8, lon=10.18, score=4, road_type="urbain_principal")
+
+    assert result["retry_after_s"] == 17 and result["llm_used"] is False
+    assert "RULE_A" in result["sheet_text"]
+
+
+def test_stray_foreign_script_tokens_are_removed():
+    assert pipeline.clean_llm_text("compactage仔细. Références: A") == "compactage. Références: A"
+    assert pipeline.clean_llm_text("الطريق البلدي") == "الطريق البلدي"  # Arabic is kept

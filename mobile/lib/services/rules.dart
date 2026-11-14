@@ -13,6 +13,13 @@ Duration backoffFor(int attempts) {
   return steps[math.min(math.max(attempts - 1, 0), steps.length - 1)];
 }
 
+/// When to retry: the backoff schedule, or the server's Retry-After if longer
+/// (retrying earlier would only be refused again).
+Duration retryDelay(int attempts, Duration? retryAfter) {
+  final backoff = backoffFor(attempts);
+  return retryAfter != null && retryAfter > backoff ? retryAfter : backoff;
+}
+
 /// Statuses that deserve a notification, with the message to show.
 const notifyMessages = {
   'confirmed': 'Votre signalement est confirmé par d’autres citoyens.',
@@ -46,7 +53,8 @@ double distanceM(double lat1, double lon1, double lat2, double lon2) {
       math.cos(_rad(lat1)) *
           math.cos(_rad(lat2)) *
           math.pow(math.sin(dLon / 2), 2);
-  return 2 * _earthM * math.asin(math.sqrt(a.toDouble()));
+  // Rounding can push a just above 1 for near-antipodal points: asin would return NaN.
+  return 2 * _earthM * math.asin(math.min(1.0, math.sqrt(a.toDouble())));
 }
 
 /// Initial bearing from point 1 to point 2, 0-360°.

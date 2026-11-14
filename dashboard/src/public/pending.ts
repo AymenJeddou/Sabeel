@@ -43,11 +43,17 @@ export function toForm(r: PendingReport): FormData {
 }
 
 /** Sends every pending report; returns how many went through. Stops on the first network error. */
-export async function flushPending(send: (f: FormData) => Promise<unknown>): Promise<number> {
+export async function flushPending(
+  send: (f: FormData) => Promise<unknown>,
+  store: { list: () => Promise<PendingReport[]>; remove: (id: string) => Promise<unknown> } = {
+    list: listPending,
+    remove: removePending,
+  },
+): Promise<number> {
   let sent = 0
   let pending: PendingReport[] = []
   try {
-    pending = await listPending()
+    pending = await store.list()
   } catch {
     return 0 // IndexedDB unavailable (private mode)
   }
@@ -58,7 +64,7 @@ export async function flushPending(send: (f: FormData) => Promise<unknown>): Pro
       const status = (e as { status?: number }).status
       if (!status || status >= 500 || status === 429) break // offline or server trouble: keep it
     }
-    await removePending(r.device_report_id) // sent, or rejected for good (4xx)
+    await store.remove(r.device_report_id) // sent, or rejected for good (4xx)
     sent++
   }
   return sent

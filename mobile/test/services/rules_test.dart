@@ -11,6 +11,9 @@ void main() {
     expect(backoffFor(3), const Duration(minutes: 10));
     expect(backoffFor(4), const Duration(hours: 1));
     expect(backoffFor(12), const Duration(hours: 1));
+    expect(retryDelay(1, const Duration(minutes: 5)), const Duration(minutes: 5));
+    expect(retryDelay(4, const Duration(minutes: 5)), const Duration(hours: 1));
+    expect(retryDelay(1, null), const Duration(seconds: 30));
   });
 
   test('status diff notifies only real changes to notifiable states', () {
@@ -37,6 +40,8 @@ void main() {
 
   test('distance and bearing', () {
     expect(distanceM(36.8, 10.18, 36.8009, 10.18), closeTo(100, 1));
+    expect(distanceM(36.8, 10.18, 36.8, 10.18), 0);
+    expect(distanceM(0, 0, 0, 180), closeTo(20015087, 1));
     expect(bearingDeg(36.8, 10.18, 36.81, 10.18), closeTo(0, 0.5));
     expect(bearingDeg(36.8, 10.18, 36.8, 10.19), closeTo(90, 0.5));
   });

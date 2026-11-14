@@ -177,7 +177,9 @@ class SabeelData extends ChangeNotifier {
         (r) => r.copyWith(
           uploadState: e.retryable ? UploadState.pending : UploadState.failed,
           attempts: attempts,
-          nextAttemptAt: DateTime.now().toUtc().add(backoffFor(attempts)),
+          nextAttemptAt: DateTime.now().toUtc().add(
+            retryDelay(attempts, e.retryAfter),
+          ),
           lastError: e.message,
         ),
       );

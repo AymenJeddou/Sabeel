@@ -3,6 +3,10 @@ import { api, date, dateTime, type PotholeDetail, usePoll } from '../api'
 import { EVENT, PRIORITY_PARTS, ROAD_CLASS, SOURCE, STATUS } from '../i18n'
 import { Deadline, ErrorNote, Icon, Loading, PhotoWithBoxes, Severity, SheetBadge, StatusBadge } from '../ui'
 
+/** LLM sheets may use **bold**: shown as bold, never as raw asterisks. */
+const boldText = (text: string) =>
+  text.replace(/^\s*[*-]\s+/gm, '• ').split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <b key={i}>{part}</b> : part))
+
 /** The full case file of one pothole and every action an officer can take on it. */
 export default function PotholePanel({ id, onClose, onChanged, onShowOnMap }: {
   id: string
@@ -107,7 +111,7 @@ function Panel({ p, onClose, onChanged, onShowOnMap }: { p: PotholeDetail; onClo
             {editing ? (
               <textarea className="sheet-edit" rows={12} value={draft} onChange={(e) => setDraft(e.target.value)} />
             ) : (
-              p.sheet_text && <pre>{p.sheet_text}</pre>
+              p.sheet_text && <pre>{boldText(p.sheet_text)}</pre>
             )}
             {!!p.sheet_citations.length && (
               <ul className="citations">

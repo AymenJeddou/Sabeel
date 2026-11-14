@@ -204,7 +204,7 @@ Six features (F1–F6) are specified below. Each has a user story, functional ru
 3. An offline report is delivered after connectivity returns, exactly once.
 4. Open app → report sent takes less than 15 s.
 
-**Status:** ✅ One-tap capture (GPS and compass started with the camera, 5 s undo, blur check) and a detailed mode in the app; the same report from any phone browser (PWA, `source = web`). Every report is stored on the phone and retried with backoff (30 s, 2 min, 10 min, 1 h) on start, reconnection and every 30 s; `POST /reports` is idempotent on `device_report_id`, so a retry never duplicates. Without a detection the API answers `detected: false` and the citizen chooses "Reprendre" or "Envoyer quand même" (`force=true`). Above 40 km/h nothing is rejected. Measured round trip: 0.4–0.75 s.
+**Status:** ✅ One-tap capture (GPS and compass started with the camera, 5 s undo, blur check) and a detailed mode in the app; the same report from any phone browser (PWA, `source = web`). Every report is stored on the phone and retried with backoff (30 s, 2 min, 10 min, 1 h, or the server's `Retry-After` when a rate limit asks for longer) on start, reconnection and every 30 s; `POST /reports` is idempotent on `device_report_id`, so a retry never duplicates. Without a detection the API answers `detected: false` and the citizen chooses "Reprendre" or "Envoyer quand même" (`force=true`). Above 40 km/h nothing is rejected. Measured round trip: 0.4–0.75 s.
 
 ### 5.3 F2 — Map with filters and deduplication
 
@@ -235,7 +235,7 @@ Six features (F1–F6) are specified below. Each has a user story, functional ru
 2. Retrieve the top-5 matching rule chunks from Chroma (multilingual embeddings), discarding matches below a similarity floor.
 3. Build a prompt that forces the LLM to cite a rule identifier for every claim and to answer "not enough rules" when nothing matches.
 4. Call the primary LLM (Llama 3.1 8B Instruct), fall back to the backup (Qwen 2.5 72B Instruct), then to a deterministic template if output is invalid.
-5. A citation guard rejects any citation that does not exist in the retrieved set.
+5. A citation guard rejects any citation that does not exist in the retrieved set. It reads the last `Références :` line (the body may mention a reference too), ignores markdown styling, and counts each rule once; one unknown id discards the whole answer for the rule-only template.
 6. Return `sheet_text`, `rule_citations`, `target_office`, `road_type`.
 
 > **Rationale.** A fixed template cannot adapt to road type or quote the right rule; an unconstrained LLM can invent rules — unacceptable in an official document. RAG restricts the model to real text, and every line stays traceable to its source.
@@ -779,6 +779,8 @@ Chunking is **semantic**: one chunk per article or clause; chunks above 300 word
 - Compliance with **Law 2004-63** on personal data; location data describes the road, not the person's trips.
 - Photos are deleted when the sheet is approved, except the clearest one, kept as a training label (AD-14). Public endpoints never return photos, device ids or exact times (enforced by a test).
 - Driving mode discards empty frames on the device and never stores whole trips.
+- Rate limits (NFR-6) key on the client address added by the hosting proxy (the last `X-Forwarded-For` entry), so a client cannot dodge them by sending its own header; idle keys are dropped so memory stays bounded.
+- Stored photo URLs are resolved only inside the photo folder or the project's own storage bucket: a crafted path or an outside URL is never read or deleted.
 
 ---
 
@@ -906,7 +908,7 @@ The MVP is accepted when all items below are demonstrated live to the team and s
 | 5 | Map shows, filters, deduplicates in the database | ✅ |
 | 6 | Status flow logged, invalid transition rejected | ✅ `report_events`, 409 |
 | 7 | Push to `main` deploys | ✅ workflow ready; needs the cloud accounts (`DEPLOYMENT.md`) |
-| 8 | 0 TND per month | ✅ free tiers only (LLM: see OP-6) |
+| 8 | 0 TND per month | ✅ free tiers only (LLM: Groq free tier) |
 | 9 | Code, Dockerfiles, API docs, README, model report | ✅ |
 
 ---
@@ -988,7 +990,7 @@ The RAG service internally uses the road-type categories `urbain_principal`, `ur
 | OP-3 | Replace placeholder rules by validated texts | Resolved: Law 2018-29, Law 86-17, FHWA manual; a review by a jurist is still recommended |
 | OP-4 | Priority formula and traffic source | Resolved: AD-17, with the OSM road class as the traffic proxy |
 | OP-5 | Law 2018-29 is reported repealed by décret-loi n°4 of 30 Sept 2026, effective after the next municipal elections | Open: update `rules_real/loi_2018_29_ccl.yaml` when the new text is in force |
-| OP-6 | LLM provider: the Hugging Face token has no credits left (402) | Open: choose a Groq / OpenRouter free tier or HF credits; sheets use the rule-only template meanwhile |
+| OP-6 | LLM provider: the Hugging Face token has no credits left (402) | Resolved: Groq free tier, `qwen/qwen3.8-27b` (~10 s per sheet, valid citations); the template remains the fallback |
 | OP-7 | mAP@50 0.562 vs the 0.75 target | Open: Tunisian test set and error analysis (`MODEL_REPORT.md` §6) |
 
 ---|---|---|---|

@@ -19,7 +19,7 @@ from backend.app.db import get_db
 from backend.app.db_models import Office
 from backend.app.feedback import false_positive_rate
 from backend.app.potholes import now_utc
-from backend.app.rag_client import chat as rag_chat
+from backend.app import rag_client
 from backend.app.ratelimit import limit
 from backend.app.routers.authorities import scoped_potholes
 from backend.app.schemas import AssistantReply, AssistantRequest
@@ -84,9 +84,11 @@ Nids-de-poule ouverts, du plus prioritaire au moins prioritaire :
 Agent : {body.question}
 Assistant :"""
 
-    answer = await rag_chat(prompt)
+    answer = await rag_client.chat(prompt)
     source = "llm" if answer else "fallback"
     answer = answer or fallback(s, open_, now)
+    # Some models write "TN‑3FA9C1" with a non-breaking hyphen: normalise so refs link.
+    answer = answer.replace("‑", "-").replace("‐", "-")
     by_ref = {r["ref"]: r for r in rows}
     refs = [by_ref[ref] for ref in dict.fromkeys(REF.findall(answer)) if ref in by_ref]
     return {"answer": answer.strip(), "refs": refs, "source": source}

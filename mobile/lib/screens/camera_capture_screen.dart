@@ -245,6 +245,7 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
     messenger.showSnackBar(
       SnackBar(
         duration: _undoWindow,
+        persist: false, // snackbars with an action otherwise stay until tapped
         content: const Text('Signalement enregistré · envoi dans 5 s'),
         action: SnackBarAction(
           label: 'ANNULER',
@@ -280,6 +281,7 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
               ? 'Envoyé · ${stored.reference}'
               : 'Hors ligne : envoi automatique dès le retour du réseau.',
         ),
+        persist: false,
         action: stored.notDetected
             ? SnackBarAction(
                 label: 'VOIR',

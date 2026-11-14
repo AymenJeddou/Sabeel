@@ -20,13 +20,26 @@ from backend.app.config import settings
 _hits: dict[str, deque[float]] = defaultdict(deque)
 
 
+SWEEP_AT = 10_000  # keys kept before idle ones are dropped
+MAX_WINDOW_S = 86_400  # longest window any route uses (confirm_device)
+
+
 def reset() -> None:
     _hits.clear()
+
+
+def _sweep(now: float) -> None:
+    """Drops keys idle for longer than any window: every IP or device ever seen would
+    otherwise stay in memory for the life of the process."""
+    for key in [k for k, q in _hits.items() if not q or q[-1] <= now - MAX_WINDOW_S]:
+        del _hits[key]
 
 
 def hit(key: str, max_calls: int, window_s: float, now: float | None = None) -> float | None:
     """Records one call; returns seconds to wait if over the limit, else None."""
     now = time.monotonic() if now is None else now
+    if len(_hits) > SWEEP_AT:
+        _sweep(now)
     q = _hits[key]
     while q and q[0] <= now - window_s:
         q.popleft()
@@ -37,9 +50,10 @@ def hit(key: str, max_calls: int, window_s: float, now: float | None = None) -> 
 
 
 def _client_ip(request: Request) -> str:
-    # Cloud Run puts the real client first in X-Forwarded-For.
+    # The proxy in front of us (Cloud Run, Hugging Face) appends the address it saw, so the
+    # last entry is the real client; the first one is whatever the client chose to send.
     fwd = request.headers.get("x-forwarded-for")
-    return fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "?")
+    return fwd.split(",")[-1].strip() if fwd else (request.client.host if request.client else "?")
 
 
 def limit(name: str, max_calls: int, window_s: float, by: str = "ip"):

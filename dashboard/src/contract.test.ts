@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { qs, utcIso } from './api'
+import { ago, qs, utcIso } from './api'
 import { priorityExplanation } from './i18n'
 import { reportFields } from './public/report'
 
@@ -42,5 +42,13 @@ describe('helpers', () => {
   it('explains a priority score with only the non-zero parts', () => {
     expect(priorityExplanation({ severity: 40, road: 15, confirmations: 2.5, age: 0, rain: 10 }))
       .toBe('Sévérité +40 · Type de route +15 · Citoyens +2.5 · Pluie prévue +10')
+  })
+})
+
+describe('relative times', () => {
+  it('never prints NaN', () => {
+    expect(ago(null)).toBe('—')
+    expect(ago('not a date')).toBe('—')
+    expect(ago(new Date(Date.now() - 3 * 86400000).toISOString())).toBe('il y a 3 jours')
   })
 })

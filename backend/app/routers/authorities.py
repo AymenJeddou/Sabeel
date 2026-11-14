@@ -133,6 +133,12 @@ EXPORT_COLUMNS = [
 ]
 
 
+def csv_safe(v: Any) -> Any:
+    """Road names come from OpenStreetMap, which anyone can edit: text starting with = + - @
+    would run as a formula when an officer opens the export in Excel, so it gets a leading '."""
+    return "'" + v if isinstance(v, str) and v[:1] in ("=", "+", "-", "@", "\t", "\r") else v
+
+
 @router.get("/export")
 async def export(
     format: str = Query("csv", pattern="^(csv|geojson)$"),
@@ -176,7 +182,7 @@ async def export(
         buf.write("﻿")  # Excel opens UTF-8 (accents, Arabic) correctly with a BOM
         writer.writerow(EXPORT_COLUMNS)
         for r in rows:
-            writer.writerow([cell(r[c]) for c in EXPORT_COLUMNS])
+            writer.writerow([csv_safe(cell(r[c])) for c in EXPORT_COLUMNS])
             yield buf.getvalue()
             buf.seek(0)
             buf.truncate()
