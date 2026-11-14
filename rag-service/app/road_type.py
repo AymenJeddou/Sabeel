@@ -15,6 +15,11 @@ _CITY_BBOXES: list[tuple[float, float, float, float, str]] = [
     (36.72, 36.90, 10.05, 10.35, "urbain_principal"),  # Tunis
     (34.65, 34.80, 10.65, 10.85, "urbain_principal"),  # Sfax
     (35.78, 35.88, 10.55, 10.70, "urbain_principal"),  # Sousse
+    (37.25, 37.31, 9.82, 9.90, "urbain_principal"),  # Bizerte
+    (35.74, 35.79, 10.79, 10.85, "urbain_principal"),  # Monastir
+    (35.65, 35.70, 10.07, 10.13, "urbain_principal"),  # Kairouan
+    (33.86, 33.91, 10.06, 10.12, "urbain_principal"),  # Gabès
+    (36.43, 36.47, 10.70, 10.76, "urbain_principal"),  # Nabeul
 ]
 
 

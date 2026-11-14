@@ -4,6 +4,8 @@ from app.road_type import normalize_road_type, resolve_road_type
 def test_city_centres_are_urban_and_the_rest_rural():
     assert resolve_road_type(36.80, 10.18) == "urbain_principal"  # Tunis
     assert resolve_road_type(34.74, 10.76) == "urbain_principal"  # Sfax
+    assert resolve_road_type(37.274, 9.873) == "urbain_principal"  # Bizerte
+    assert resolve_road_type(33.881, 10.098) == "urbain_principal"  # Gabès
     assert resolve_road_type(33.00, 9.00) == "rural"
 
 
