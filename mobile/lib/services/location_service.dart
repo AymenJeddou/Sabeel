@@ -68,8 +68,17 @@ class LocationService {
       );
     }
 
+    // A fix from the last 30 s is good enough and instant.
+    final recent = await Geolocator.getLastKnownPosition();
+    if (recent != null &&
+        DateTime.now().difference(recent.timestamp).inSeconds < 30) {
+      return _snapshot(recent);
+    }
+
     // Without a time limit, getCurrentPosition waits forever when no fix
-    // arrives (indoors, weak signal), leaving the confirm screen stuck.
+    // arrives (indoors, weak signal), leaving the screen stuck. The plugin's
+    // own timeLimit is not always honoured (seen on the Android emulator),
+    // so a Dart-side timeout backs it up.
     Position position;
     try {
       position = await Geolocator.getCurrentPosition(
@@ -77,7 +86,7 @@ class LocationService {
           accuracy: LocationAccuracy.high,
           timeLimit: Duration(seconds: 10),
         ),
-      );
+      ).timeout(const Duration(seconds: 12));
     } on TimeoutException {
       final lastKnown = await Geolocator.getLastKnownPosition();
       if (lastKnown == null) {
@@ -88,7 +97,10 @@ class LocationService {
       }
       position = lastKnown;
     }
+    return _snapshot(position);
+  }
 
+  Future<LocationSnapshot> _snapshot(Position position) async {
     final compassHeading = await _readCompassHeading();
     final directionDeg = compassHeading ?? _normalizeHeading(position.heading);
     final speedKmh = position.speed > 0 ? position.speed * 3.6 : 0.0;

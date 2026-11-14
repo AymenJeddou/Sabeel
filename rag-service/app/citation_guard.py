@@ -17,12 +17,14 @@ _REF_LINE_RE = re.compile(r"R[ée]f[ée]rences?\s*:\s*(.+)", re.IGNORECASE)
 def extract_claimed_ids(llm_text: str) -> list[str] | None:
     """Returns the list of rule_ids the LLM claims to have used, or None if
     no parseable reference trailer was found at all."""
-    match = _REF_LINE_RE.search(llm_text)
-    if not match:
+    # The trailer is the LAST such line (the body may say "Référence : art. 3"), and models
+    # often style it as markdown: **Références** : `R1`, `R2`.
+    matches = list(_REF_LINE_RE.finditer(re.sub(r"[*`]", "", llm_text)))
+    if not matches:
         return None
-    raw = match.group(1)
-    ids = [part.strip().strip(".") for part in raw.split(",")]
-    return [i for i in ids if i]
+    raw = matches[-1].group(1)
+    ids = [part.strip().strip(".;") for part in re.split(r"[,;]", raw)]
+    return list(dict.fromkeys(i for i in ids if i))  # in order, each id once
 
 
 def validate_citations(

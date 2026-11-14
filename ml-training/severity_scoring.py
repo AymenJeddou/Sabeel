@@ -1,10 +1,39 @@
 """
-Official Severity Scoring Rule (1–5) – WP1 Sprint 1
-This is the function that produces the `score` field consumed by WP2 and WP3.
-Treat as frozen unless the whole team agrees to change it.
+Severity scoring rule (1-5): turns the model's boxes into the `score` field
+consumed by the Core API, the SLA policy and the RAG work sheet.
+
+v2 (issue #42). Severity is a 2-D proxy: the relative area of the largest
+confident box. Depth cannot be measured from one photo. Two changes from v1:
+
+1. **Separate bands per capture mode.** A citizen standing over a pothole
+   (`manual`, `web`) fills much more of the frame than a dashcam
+   (`driving_mode`) sees from 10 m away. With one set of bands, 71 % of the
+   close-up seed photos scored 5. The dashcam bands are the v1 bands, which
+   fit RDD2022's dashcam views.
+2. **No +1 for high confidence.** Confidence says how sure the model is that
+   it is a pothole, not how bad the pothole is.
+
+| Box area / image area | manual & web (close-up) | driving_mode (dashcam) |
+|-----------------------|-------------------------|------------------------|
+| score 1               | < 3 %                   | < 0.5 %                |
+| score 2               | < 8 %                   | < 1.5 %                |
+| score 3               | < 20 %                  | < 4 %                  |
+| score 4               | < 35 %                  | < 8 %                  |
+| score 5               | ≥ 35 %                  | ≥ 8 %                  |
+
+The close-up bands were set on the 24 detected seed photos so that the
+scores spread over all five levels (3 / 5 / 6 / 6 / 4 instead of
+1 / 1 / 2 / 3 / 17). They are provisional: re-fit them on the human-labelled
+severity set described in #42 once it exists (ml-training/eval/README.md).
 """
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
+BANDS = {
+    "close_up": (0.03, 0.08, 0.20, 0.35),
+    "dashcam": (0.005, 0.015, 0.04, 0.08),
+}
+MODE_FOR_SOURCE = {"manual": "close_up", "web": "close_up", "driving_mode": "dashcam"}
 
 
 def score_from_detections(
@@ -12,45 +41,27 @@ def score_from_detections(
     image_width: int,
     image_height: int,
     conf_threshold: float = 0.25,
+    source: str = "manual",
 ) -> int:
-    """
-    Returns integer score 1–5 (or 0 if no valid detections).
+    """Returns an integer score 1-5, or 0 if there is no confident box.
 
-    boxes: list of dicts with keys: x, y, w, h, conf (and optionally class)
+    boxes: dicts with keys x, y, w, h, conf. source: the report's capture mode.
     """
-    if not boxes:
-        return 0
-
-    # Keep only confident detections
     valid = [b for b in boxes if b.get("conf", 0) >= conf_threshold]
-    if not valid:
+    if not valid or image_width <= 0 or image_height <= 0:  # a corrupt frame has no size
         return 0
+    rel = max(b["w"] * b["h"] for b in valid) / float(image_width * image_height)
+    bands = BANDS[MODE_FOR_SOURCE.get(source, "close_up")]
+    return 1 + sum(rel >= t for t in bands)
 
-    img_area = float(image_width * image_height)
-    max_rel_area = 0.0
-    max_conf = 0.0
 
-    for b in valid:
-        area = b["w"] * b["h"]
-        rel = area / img_area
-        if rel > max_rel_area:
-            max_rel_area = rel
-            max_conf = b.get("conf", 0.5)
-
-    # Heuristic based on relative area (2-D proxy for size/severity)
-    if max_rel_area < 0.005:
-        base = 1
-    elif max_rel_area < 0.015:
-        base = 2
-    elif max_rel_area < 0.04:
-        base = 3
-    elif max_rel_area < 0.08:
-        base = 4
-    else:
-        base = 5
-
-    # Small boost for very high confidence
-    if max_conf > 0.85 and base < 5:
-        base += 1
-
-    return min(5, max(1, base))
+if __name__ == "__main__":
+    # Self-check: the band edges and the per-mode difference.
+    box = lambda area: [{"x": 0, "y": 0, "w": int(area * 100), "h": 100, "conf": 0.9}]
+    assert score_from_detections([], 100, 100) == 0
+    assert score_from_detections(box(0.02), 100, 100, source="manual") == 1
+    assert score_from_detections(box(0.02), 100, 100, source="driving_mode") == 3
+    assert score_from_detections(box(0.50), 100, 100, source="web") == 5
+    assert score_from_detections(box(0.10), 100, 100, source="manual") == 3
+    assert score_from_detections(box(0.10), 0, 100) == 0
+    print("severity_scoring self-check passed")

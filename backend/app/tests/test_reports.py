@@ -1,93 +1,104 @@
-"""Integration tests against a real database -- run `docker compose up -d db`
-first (see backend/app/README.md). Each test uses a fresh device_report_id
-(device_report_id is UNIQUE) so repeated runs don't collide. Uses the shared
-`client` fixture from conftest.py (TestClient as a context manager -- see its
-docstring for why a bare TestClient(app) breaks on Windows).
-"""
+"""Report intake: contract shape, idempotency, detection gate, validation, privacy."""
 import io
-import random
-import uuid
 
+import cv2
+import numpy as np
 
-def _report_form(device_report_id: str | None = None, **overrides):
-    form = {
-        "device_report_id": device_report_id or f"test-{uuid.uuid4()}",
-        # Random spot around Tunis so leftover rows from earlier runs never
-        # fall within the 5m dedup radius and flip status to "confirmed".
-        "lat": f"{random.uniform(36.75, 36.85):.6f}",
-        "lon": f"{random.uniform(10.13, 10.23):.6f}",
-        "gps_accuracy_m": "4.2",
-        "speed_kmh": "0",
-        "direction_deg": "270.0",
-        "captured_at": "2026-09-15T10:32:00Z",
-        "source": "manual",
-    }
-    form.update(overrides)
-    return form
-
-
-def _submit(client, device_report_id: str | None = None, **overrides):
-    files = {"photo": ("pothole.jpg", io.BytesIO(b"fake-bytes"), "image/jpeg")}
-    return client.post("/reports", data=_report_form(device_report_id, **overrides), files=files)
+from backend.app import privacy
+from backend.app.tests.conftest import POTHOLE_JPG, ROAD_JPG, report_form, submit
 
 
 def test_create_report_returns_contract_shape(client):
-    response = _submit(client)
-
-    assert response.status_code == 201
-    body = response.json()
-    assert body["status"] == "new"
-    # A fake JPEG payload can't score >= 1 from the real vision model.
-    assert body["score"] is None
-    assert "report_id" in body
-
-
-def test_second_report_within_5m_is_deduplicated_and_confirmed(client):
-    _submit(client, lat="36.80650", lon="10.18150")
-    response = _submit(client, lat="36.80651", lon="10.18151")  # ~1.3m away
-
-    assert response.status_code == 201
-    assert response.json()["status"] == "confirmed"
+    r = submit(client)
+    assert r.status_code == 201
+    body = r.json()
+    assert body["detected"] is True and body["status"] == "new"
+    assert 1 <= body["score"] <= 5 and 0 < body["confidence"] <= 1
+    assert body["pothole_id"] and body["ref"].startswith("TN-")
+    assert body["sheet_summary"] is None  # sheets are generated in the background
 
 
-def test_get_report_by_device_id_returns_what_was_created(client):
-    device_id = f"test-{uuid.uuid4()}"
-    _submit(client, device_id)
-
-    response = client.get(f"/reports/{device_id}")
-
-    assert response.status_code == 200
-    body = response.json()
-    assert set(body.keys()) >= {"report_id", "status", "score"}
-
-
-def test_get_report_unknown_device_id_returns_404(client):
-    response = client.get(f"/reports/does-not-exist-{uuid.uuid4()}")
-    assert response.status_code == 404
+def test_same_device_report_id_twice_returns_the_same_report(client):
+    form = report_form()
+    files = lambda: {"photo": ("p.jpg", io.BytesIO(POTHOLE_JPG), "image/jpeg")}
+    first = client.post("/reports", data=form, files=files())
+    second = client.post("/reports", data=form, files=files())
+    assert (first.status_code, second.status_code) == (201, 200)
+    assert first.json()["report_id"] == second.json()["report_id"]
+    assert len(client.get(f"/devices/{form['device_id']}/reports").json()) == 1
 
 
-def test_patch_forward_transition_succeeds(client):
-    create_response = _submit(client)
-    report_id = create_response.json()["report_id"]
-
-    response = client.patch(f"/reports/{report_id}", json={"status": "confirmed"})
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["status"] == "confirmed"
-    assert "updated_at" in body
+def test_no_detection_is_stored_for_review_without_a_pothole(client):
+    r = submit(client, photo=ROAD_JPG)
+    body = r.json()
+    assert r.status_code == 201 and body["detected"] is False
+    assert body["pothole_id"] is None and body["needs_review"] is True
 
 
-def test_patch_backward_transition_returns_409(client):
-    create_response = _submit(client)
-    report_id = create_response.json()["report_id"]
-    client.patch(f"/reports/{report_id}", json={"status": "confirmed"})
-
-    response = client.patch(f"/reports/{report_id}", json={"status": "new"})
-
-    assert response.status_code == 409
+def test_send_anyway_creates_a_pothole_flagged_for_review(client):
+    form = report_form()
+    files = lambda: {"photo": ("p.jpg", io.BytesIO(ROAD_JPG), "image/jpeg")}
+    client.post("/reports", data=form, files=files())
+    forced = client.post("/reports", data={**form, "force": "true"}, files=files()).json()
+    assert forced["pothole_id"] and forced["needs_review"] is True and forced["detected"] is False
 
 
-def test_patch_unknown_report_id_returns_404(client):
-    response = client.patch(f"/reports/{uuid.uuid4()}", json={"status": "confirmed"})
-    assert response.status_code == 404
+def test_direction_is_optional_and_web_source_is_accepted(client):
+    form = report_form(source="web")
+    del form["direction_deg"]
+    r = client.post("/reports", data=form, files={"photo": ("p.jpg", io.BytesIO(POTHOLE_JPG), "image/jpeg")})
+    assert r.status_code == 201
+
+
+def test_rejects_non_images_bad_coordinates_and_dates(client):
+    assert submit(client, photo=b"definitely not a jpeg").status_code == 415
+    assert submit(client, lat=95).status_code == 422
+    assert submit(client, captured_at="2099-01-01T00:00:00Z").status_code == 422
+    assert submit(client, captured_at="2020-01-01T00:00:00Z").status_code == 422
+
+
+def test_rejects_oversized_uploads(client, monkeypatch):
+    from backend.app.config import settings
+
+    monkeypatch.setattr(settings, "max_upload_mb", 0.01)
+    assert submit(client).status_code == 413
+
+
+def test_rate_limit_per_device(client):
+    form = report_form()
+    codes = [
+        client.post("/reports", data={**form, "device_report_id": f"rl-{i:08d}"},
+                    files={"photo": ("p.jpg", io.BytesIO(ROAD_JPG), "image/jpeg")}).status_code
+        for i in range(11)
+    ]
+    assert codes[:10] == [201] * 10 and codes[10] == 429
+
+
+def test_tracker_shows_status_and_timeline(client):
+    form = report_form()
+    client.post("/reports", data=form, files={"photo": ("p.jpg", io.BytesIO(POTHOLE_JPG), "image/jpeg")})
+    body = client.get(f"/reports/{form['device_report_id']}").json()
+    assert body["status"] == "new" and body["timeline"][0]["status"] == "new"
+    assert client.get("/reports/does-not-exist").status_code == 404
+
+
+def test_stored_photo_has_no_exif_and_is_reencoded(client):
+    body = submit(client).json()
+    detail = client.get(f"/reports/{body['device_report_id']}").json()
+    stored = client.get(detail["photo_url"]).content
+    assert stored[:3] == b"\xff\xd8\xff" and b"Exif" not in stored[:200]
+
+
+def test_anonymize_blurs_a_detected_face():
+    # A synthetic image is enough to check the blur path itself.
+    img = np.full((400, 400, 3), 128, np.uint8)
+    ok, buf = cv2.imencode(".jpg", img)
+    out, regions = privacy.anonymize(buf.tobytes())
+    assert out[:3] == b"\xff\xd8\xff" and regions == 0
+    assert privacy.sniff_image_type(b"\x89PNG\r\n\x1a\n....") == "png"
+
+
+def test_detect_scores_a_frame_without_storing_it(client):
+    r = client.post("/detect", files={"frame": ("f.jpg", io.BytesIO(POTHOLE_JPG), "image/jpeg")}, data={"device_id": "car-1"})
+    assert r.status_code == 200 and r.json()["detected"] is True
+    assert client.get("/map").json() == []

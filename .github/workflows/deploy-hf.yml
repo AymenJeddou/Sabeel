@@ -1,0 +1,40 @@
+name: Deploy (Hugging Face Space)
+
+# The simplest deployment: every push to main uploads the repository to a
+# free Hugging Face Space, which builds deploy/huggingface/Dockerfile and runs
+# the API, the RAG service and the web app in one container.
+# Needs the secret HF_TOKEN (write access) and the variable HF_SPACE
+# (e.g. aymenjeddou/sabeel). Skipped until they exist. See docs/DEPLOYMENT.md.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  space:
+    runs-on: ubuntu-latest
+    if: ${{ vars.HF_SPACE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Lay out the Space (Dockerfile and README at the root)
+        run: |
+          mkdir /tmp/space
+          cp -r backend dashboard rag-service deploy /tmp/space/
+          mkdir -p /tmp/space/ml-training
+          cp -r ml-training/inference.py ml-training/severity_scoring.py ml-training/models /tmp/space/ml-training/
+          cp deploy/huggingface/Dockerfile /tmp/space/Dockerfile
+          cp deploy/huggingface/README.md /tmp/space/README.md
+          rm -rf /tmp/space/backend/app/tests /tmp/space/dashboard/node_modules /tmp/space/rag-service/chroma_db /tmp/space/rag-service/.env
+      - name: Upload to the Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          pip install -q "huggingface_hub>=0.24"
+          python -c "
+          from huggingface_hub import HfApi
+          HfApi().upload_folder(folder_path='/tmp/space', repo_id='${{ vars.HF_SPACE }}', repo_type='space',
+                                commit_message='Deploy ${{ github.sha }}', delete_patterns=['*'])
+          "

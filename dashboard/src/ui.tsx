@@ -1,5 +1,6 @@
-import { useState, type ReactNode } from 'react'
-import { api, ago, date, NEXT, severityColor, STATUS, type Report, type Status } from './api'
+import type { ReactNode } from 'react'
+import { ago, asset, type Box, type Pothole, type SheetStatus, type Status, severityColor } from './api'
+import { priorityExplanation, SHEET, STATUS } from './i18n'
 
 const PIN = 'M100 250C64 196 20 152 20 100a80 80 0 0 1 160 0c0 52-44 96-80 150z'
 const ROAD = 'M44 206c0-74 110-64 110-114 0-34-28-56-58-66'
@@ -39,6 +40,16 @@ const ICONS = {
   ban: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM4.9 4.9l14.2 14.2',
   car: 'M5 17h14M6 17v2M18 17v2M3 13l2-6h14l2 6v4H3zM7 13h.01M17 13h.01',
   hand: 'M18 11V6a2 2 0 0 0-4 0M14 10V4a2 2 0 0 0-4 0v2M10 10.5V6a2 2 0 0 0-4 0v8M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-6-2.4l-3.6-3.6a2 2 0 0 1 2.8-2.8L7 15',
+  route: 'M6 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM9 16h6.5a3.5 3.5 0 0 0 0-7H12',
+  cloud: 'M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.3 12 4 4 0 0 0 6 19zM8 22l1-2M12 22l1-2M16 22l1-2',
+  chart: 'M3 3v18h18M7 16l4-4 4 4 5-6',
+  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4',
+  logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+  upload: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
+  edit: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
+  refresh: 'M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6',
+  camera: 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+  eye: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
 } as const
 export type IconName = keyof typeof ICONS
 
@@ -49,13 +60,18 @@ export const Icon = ({ name, size = 18 }: { name: IconName; size?: number }) => 
   </svg>
 )
 
-const STATUS_ICON: Record<Status, IconName> = { new: 'spark', confirmed: 'users', sheet_sent: 'file', fixed: 'check', rejected: 'ban' }
+const STATUS_ICON: Record<Status, IconName> = {
+  new: 'spark', confirmed: 'users', sheet_sent: 'file', fixed: 'check', rejected: 'ban', reopened: 'refresh',
+}
 
 export const StatusBadge = ({ status }: { status: Status }) => (
   <span className={`badge tone-${STATUS[status].tone}`}>
     <Icon name={STATUS_ICON[status]} size={12} /> {STATUS[status].label}
   </span>
 )
+
+export const SheetBadge = ({ status }: { status: SheetStatus | null }) =>
+  status ? <span className={`badge tone-${SHEET[status].tone}`}><Icon name="file" size={12} /> {SHEET[status].label}</span> : null
 
 /** Five pips, filled up to the score, in the severity colour; "À évaluer" when the model saw nothing. */
 export const Severity = ({ score }: { score: number | null }) =>
@@ -70,15 +86,23 @@ export const Severity = ({ score }: { score: number | null }) =>
     </span>
   )
 
-/** "dans 3 jours" / "en retard de 5 jours" against the severity deadline. */
-export function Deadline({ r }: { r: Report }) {
-  if (!r.due_at || r.status === 'fixed' || r.status === 'rejected') return <span className="muted">—</span>
+/** "dans 3 jours" / "en retard · 5 jours" against the SLA deadline. */
+export function Deadline({ p }: { p: Pick<Pothole, 'sla_due_at' | 'sla_level' | 'status'> }) {
+  if (!p.sla_due_at || p.status === 'fixed' || p.status === 'rejected') return <span className="muted">—</span>
+  const late = p.sla_level === 'overdue'
   return (
-    <span className={r.overdue ? 'deadline late' : 'deadline'}>
-      <Icon name={r.overdue ? 'alert' : 'clock'} size={13} /> {r.overdue ? `En retard · ${ago(r.due_at).replace('il y a ', '')}` : ago(r.due_at)}
+    <span className={late ? 'deadline late' : p.sla_level === 'warning' ? 'deadline soon' : 'deadline'}>
+      <Icon name={late ? 'alert' : 'clock'} size={13} /> {late ? `En retard · ${ago(p.sla_due_at).replace('il y a ', '')}` : ago(p.sla_due_at)}
     </span>
   )
 }
+
+/** Priority score with the "why" on hover (the components sum to the score). */
+export const Priority = ({ p }: { p: Pick<Pothole, 'priority_score' | 'priority_components'> }) => (
+  <span className="priority" title={priorityExplanation(p.priority_components)} tabIndex={0}>
+    {Math.round(p.priority_score)}
+  </span>
+)
 
 export const Card = ({ title, action, children, className = '' }: { title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string }) => (
   <section className={`card ${className}`}>
@@ -92,76 +116,32 @@ export const Card = ({ title, action, children, className = '' }: { title?: Reac
   </section>
 )
 
-const ACTION_LABEL: Record<Status, string> = {
-  new: '', confirmed: 'Confirmer', sheet_sent: 'Marquer fiche envoyée', fixed: 'Marquer réparé', rejected: 'Rejeter',
-}
-
-/** Everything about one pothole plus the actions an agent can take on it. */
-export function ReportPanel({ r, onClose, onChanged, onShowOnMap }: {
-  r: Report
-  onClose: () => void
-  onChanged: () => void
-  onShowOnMap?: () => void
-}) {
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const next = NEXT[r.status]
-  const canReject = ['new', 'confirmed', 'sheet_sent'].includes(r.status)
-
-  const move = async (to: Status) => {
-    if (to === 'rejected' && !confirm(`Rejeter ${r.ref} comme faux positif ?`)) return
-    setBusy(true)
-    setError(null)
-    try {
-      await api.setStatus(r.report_id, to)
-      onChanged()
-    } catch (e) {
-      setError((e as Error).message)
-    } finally {
-      setBusy(false)
-    }
-  }
-
+export function Kpi({ icon, label, value, hint, tone }: { icon: IconName; label: string; value: ReactNode; hint: string; tone?: string }) {
   return (
-    <aside className="panel">
-      <header className="panel-head">
-        <div>
-          <div className="ref">{r.ref}</div>
-          <h3>{r.address ?? 'Adresse inconnue'}</h3>
-        </div>
-        <button className="icon-btn" onClick={onClose} aria-label="Fermer"><Icon name="x" /></button>
-      </header>
-      {r.photo_url && <img className="panel-photo" src={r.photo_url} alt={`Photo du signalement ${r.ref}`} />}
-      <div className="panel-body">
-        <div className="panel-row"><StatusBadge status={r.status} /><Severity score={r.score} /></div>
-        <dl className="facts">
-          <dt>Signalements</dt><dd>{r.cluster_size} citoyen{r.cluster_size > 1 ? 's' : ''}</dd>
-          <dt>Premier signalement</dt><dd>{date(r.created_at)}</dd>
-          <dt>Échéance</dt><dd><Deadline r={r} /></dd>
-          <dt>Service</dt><dd>{r.target_office === 'Municipality' ? 'Municipalité' : r.target_office ?? 'Non attribué'}</dd>
-          <dt>Confiance IA</dt><dd>{r.confidence != null ? `${Math.round(r.confidence * 100)} %` : '—'}</dd>
-          <dt>Source</dt><dd><Icon name={r.source === 'driving_mode' ? 'car' : 'hand'} size={13} /> {r.source === 'driving_mode' ? 'Mode conduite' : 'Manuel'}</dd>
-          <dt>GPS</dt>
-          <dd className="mono">
-            {r.lat.toFixed(5)}, {r.lon.toFixed(5)}{' '}
-            <a href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lon}`} target="_blank" rel="noreferrer" title="Itinéraire">
-              <Icon name="external" size={13} />
-            </a>
-          </dd>
-        </dl>
-        {r.sheet_text && (
-          <details className="sheet">
-            <summary><Icon name="file" size={14} /> Fiche d'intervention</summary>
-            <pre>{r.sheet_text}</pre>
-          </details>
-        )}
-        {error && <p className="error">{error}</p>}
+    <div className={`kpi ${tone ?? ''}`}>
+      <span className="kpi-icon"><Icon name={icon} /></span>
+      <div>
+        <div className="kpi-label">{label}</div>
+        <div className="kpi-value">{value}</div>
+        <div className="kpi-hint">{hint}</div>
       </div>
-      <footer className="panel-actions">
-        {onShowOnMap && <button className="btn ghost" onClick={onShowOnMap}><Icon name="map" size={15} /> Carte</button>}
-        {canReject && <button className="btn ghost danger" disabled={busy} onClick={() => move('rejected')}><Icon name="ban" size={15} /> Rejeter</button>}
-        {next && <button className="btn primary" disabled={busy} onClick={() => move(next)}><Icon name={STATUS_ICON[next]} size={15} /> {ACTION_LABEL[next]}</button>}
-      </footer>
-    </aside>
+    </div>
   )
 }
+
+/** A photo with the model's boxes drawn over it (boxes are 0-1 of the image). */
+export function PhotoWithBoxes({ src, boxes, alt }: { src: string; boxes: Box[]; alt: string }) {
+  return (
+    <figure className="photo-boxes">
+      <img src={asset(src)} alt={alt} />
+      {boxes.map((b, i) => (
+        <span key={i} className="det-box" style={{ left: `${b.x * 100}%`, top: `${b.y * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%` }}>
+          {b.conf != null && <em>{Math.round(b.conf * 100)} %</em>}
+        </span>
+      ))}
+    </figure>
+  )
+}
+
+export const Loading = () => <div className="loading">Chargement…</div>
+export const ErrorNote = ({ error }: { error: string | null }) => (error ? <p className="error" role="alert">{error}</p> : null)

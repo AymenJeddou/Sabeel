@@ -1,30 +1,28 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../app/brand.dart';
 import '../models/queued_report.dart';
 import '../models/report_draft.dart';
-import '../services/api_client.dart';
 import '../services/location_service.dart';
-import '../services/offline_queue_repository.dart';
+import '../services/photo_tools.dart';
+import '../services/sabeel_data.dart';
 import 'report_result_screen.dart';
 
-/// Shown right after a photo is captured: acquires GPS/speed/compass,
-/// generates the report's `device_report_id`, logs every contract field
-/// (task: "log the values, don't send them anywhere yet"), and lets the
-/// citizen confirm before it's added to the offline queue.
+/// "Mode détaillé": shown right after a photo is captured. Acquires
+/// GPS/speed/compass, shows every contract field, and sends the report once
+/// the citizen confirms (stored locally first, retried if offline).
 class ReportPreviewScreen extends StatefulWidget {
   const ReportPreviewScreen({
     super.key,
     required this.photoPath,
-    required this.queueRepository,
+    required this.data,
   });
 
   final String photoPath;
-  final OfflineQueueRepository queueRepository;
+  final SabeelData data;
 
   @override
   State<ReportPreviewScreen> createState() => _ReportPreviewScreenState();
@@ -32,7 +30,6 @@ class ReportPreviewScreen extends StatefulWidget {
 
 class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
   final LocationService _locationService = LocationService();
-  final RoadScanApiClient _apiClient = const RoadScanApiClient();
   final Uuid _uuid = Uuid();
 
   ReportDraft? _draft;
@@ -88,58 +85,21 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
     final draft = _draft;
     if (draft == null || _isSaving) return;
     setState(() => _isSaving = true);
-
-    final String permanentPath;
     try {
-      permanentPath = await _copyPhotoToAppStorage(
-        widget.photoPath,
-        draft.deviceReportId,
-      );
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Impossible d'enregistrer le signalement."),
+      final path = await keepPhoto(widget.photoPath, draft.deviceReportId);
+      final stored = await widget.data.submit(
+        QueuedReport(
+          draft: draft,
+          photoPath: path,
+          queuedAt: DateTime.now().toUtc(),
         ),
       );
-      return;
-    }
-
-    // Try submitting straight to the Core API first. A report that uploads
-    // successfully has nothing left to retry, so it's never added to the
-    // offline queue -- only a failed/unreachable submission falls back to
-    // the queue, which is what "offline" actually means here.
-    try {
-      final result = await _apiClient.submitReport(
-        draft: draft,
-        photoPath: permanentPath,
-      );
-      if (!mounted) return;
+      if (!mounted || stored == null) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => ReportResultScreen(result: result)),
-      );
-      return;
-    } catch (e) {
-      debugPrint('[RoadScan] Upload failed, queuing offline: $e');
-    }
-
-    try {
-      final queuedReport = QueuedReport(
-        draft: draft,
-        photoPath: permanentPath,
-        queuedAt: DateTime.now().toUtc(),
-      );
-      await widget.queueRepository.add(queuedReport);
-      if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
-      Navigator.of(context).popUntil((route) => route.isFirst);
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Serveur injoignable — signalement ajouté à la file d'envoi.",
-          ),
+        MaterialPageRoute(
+          builder: (_) =>
+              ReportResultScreen(data: widget.data, reportId: stored.id),
         ),
       );
     } catch (_) {
@@ -151,20 +111,6 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
         ),
       );
     }
-  }
-
-  Future<String> _copyPhotoToAppStorage(
-    String sourcePath,
-    String deviceReportId,
-  ) async {
-    final documentsDir = await getApplicationDocumentsDirectory();
-    final reportsDir = Directory('${documentsDir.path}/reports');
-    if (!await reportsDir.exists()) {
-      await reportsDir.create(recursive: true);
-    }
-    final destinationPath = '${reportsDir.path}/$deviceReportId.jpg';
-    await File(sourcePath).copy(destinationPath);
-    return destinationPath;
   }
 
   @override

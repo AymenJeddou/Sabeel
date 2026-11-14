@@ -2,21 +2,49 @@ doc_title: "Loi n°86-17 du 7 mars 1986, portant refonte de la législation rela
 is_placeholder: false
 
 rules:
-  - rule_id: TN-LOI86-17-AUTOROUTE
-    road_type: autoroute
+  - rule_id: TN-LOI86-17-RN
+    road_type: rural
     section: "Classification RN/RR/RL"
     lang: fr
     severity_min: 3
     target_office: DGPC
     source: "Loi n°86-17 du 7 mars 1986, portant refonte de la législation relative au domaine public routier de l'État"
-    note: "Law number/date/title confirmed via majles.marsad.tn's record of the 2016 amendment (Loi N°26/2016). The RN/RR/RL definitions below are paraphrased from a secondary summary, not a verbatim article quote -- verify against primary text before relying on the wording."
+    note: "Law number/date/title confirmed via majles.marsad.tn's record of the 2016 amendment (Loi N°26/2016). The RN/RR/RL definitions are paraphrased from a secondary summary, not a verbatim article quote -- verify against primary text before relying on the wording."
     text: >
       La loi n°86-17 du 7 mars 1986 classe les routes du domaine public routier
       de l'État en routes nationales (RN), routes régionales (RR) et routes
-      locales (RL). Les autoroutes et routes nationales assurent les liaisons
-      entre les frontières du territoire de la République et relèvent du
-      domaine public routier de l'État, géré par la DGPC (Direction Générale
-      des Ponts et Chaussées, Ministère de l'Équipement et de l'Habitat).
+      locales (RL). Une route nationale relève du domaine public routier de
+      l'État et non du domaine communal, même lorsqu'elle traverse une ville :
+      un nid-de-poule sur une RN est à transmettre à la direction régionale de
+      l'équipement (DGPC) du gouvernorat.
+
+  - rule_id: TN-LOI86-17-RN-URBAIN
+    road_type: urbain_principal
+    section: "Classification RN/RR/RL"
+    lang: fr
+    severity_min: 3
+    target_office: DGPC
+    source: "Loi n°86-17 du 7 mars 1986, portant refonte de la législation relative au domaine public routier de l'État"
+    note: "Same provenance caveat as TN-LOI86-17-RN. Duplicated under urbain_principal because classified national roads cross cities (e.g. Avenue Habib Bourguiba in Tunis is tagged RN9 in OpenStreetMap); read together with TN-CCL2018-ART69, which excludes them from the municipal domain."
+    text: >
+      Les routes classées nationales (RN) font partie du domaine public routier
+      de l'État au sens de la loi n°86-17, y compris leurs traversées
+      d'agglomération. Leur entretien relève du Ministère de l'Équipement, par
+      la DGPC et ses directions régionales.
+
+  - rule_id: TN-AUTOROUTE-STA
+    road_type: autoroute
+    section: "Exploitation des autoroutes"
+    lang: fr
+    severity_min: 3
+    target_office: Ministry of Equipment
+    source: "Société Tunisie Autoroutes, entreprise publique sous la tutelle du Ministère de l'Équipement (tunisieautoroutes.tn)"
+    note: "Describes who operates motorways; not a statute. Motorways are out of the MVP scope (cahier des charges 4.2): the sheet is addressed to the ministry, which forwards it."
+    text: >
+      Les autoroutes tunisiennes sont exploitées et entretenues par la Société
+      Tunisie Autoroutes, entreprise publique placée sous la tutelle du
+      Ministère de l'Équipement. Un nid-de-poule sur autoroute est signalé au
+      Ministère de l'Équipement pour transmission à l'exploitant.
 
   - rule_id: TN-LOI86-17-RR
     road_type: rural

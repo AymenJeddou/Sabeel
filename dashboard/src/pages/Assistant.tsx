@@ -1,13 +1,13 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import { latLngBounds } from 'leaflet'
-import { api, go, severityColor, type Report } from '../api'
+import { api, go, severityColor, type Pothole } from '../api'
 import { Icon, Severity, StatusBadge } from '../ui'
 
 interface Turn {
   role: 'user' | 'assistant'
   content: string
-  refs?: Report[]
+  refs?: Pothole[]
   source?: 'llm' | 'fallback'
 }
 
@@ -20,20 +20,28 @@ const PROMPTS = [
   'What is the median repair time and how can we improve it?',
 ]
 
-/** TN-XXXX in the answer become links to the map; **bold** and "- " bullets are honoured. */
-function Rich({ text, refs }: { text: string; refs: Report[] }) {
+/** TN-XXXXXX in the answer become links to the map; **bold** and "- " bullets are honoured. */
+function Rich({ text, refs }: { text: string; refs: Pothole[] }) {
   const byRef = new Map(refs.map((r) => [r.ref, r]))
   const inline = (s: string): ReactNode[] =>
-    s.split(/(\*\*[^*]+\*\*|TN-[0-9A-Z]{4})/g).map((part, i) => {
+    s.split(/(\*\*[^*]+\*\*|TN-[0-9A-F]{6})/g).map((part, i) => {
       if (part.startsWith('**')) return <b key={i}>{part.slice(2, -2)}</b>
       const r = byRef.get(part)
-      return r ? <a key={i} className="ref-link" onClick={() => go('map', r.report_id)}>{part}</a> : <Fragment key={i}>{part}</Fragment>
+      return r ? <a key={i} className="ref-link" onClick={() => go('map', r.pothole_id)}>{part}</a> : <Fragment key={i}>{part}</Fragment>
     })
   const blocks: ReactNode[] = []
   let items: ReactNode[] = []
   const flush = () => items.length && (blocks.push(<ul key={blocks.length}>{items}</ul>), (items = []))
   for (const line of text.split('\n')) {
+    // Markdown headings ("### 3. Next") become a bold line, never raw hashes.
+    const heading = line.match(/^\s*#{1,6}\s+(.*)/)
+    if (heading) {
+      flush()
+      blocks.push(<p key={blocks.length}><b>{inline(heading[1].replace(/\*\*/g, ''))}</b></p>)
+      continue
+    }
     const bullet = line.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)/)
+    if (bullet && !bullet[1].trim()) continue
     if (bullet) items.push(<li key={items.length}>{inline(bullet[1])}</li>)
     else {
       flush()
@@ -44,7 +52,7 @@ function Rich({ text, refs }: { text: string; refs: Report[] }) {
   return <div className="rich" dir="auto">{blocks}</div>
 }
 
-function Fit({ refs }: { refs: Report[] }) {
+function Fit({ refs }: { refs: Pothole[] }) {
   const map = useMap()
   useEffect(() => {
     if (refs.length) map.fitBounds(latLngBounds(refs.map((r) => [r.lat, r.lon])), { padding: [40, 40], maxZoom: 16 })
@@ -63,7 +71,7 @@ export default function Assistant() {
 
   const ask = async (question: string) => {
     if (!question.trim() || thinking) return
-    const history = turns.map(({ role, content }) => ({ role, content }))
+    const history = turns.slice(-6).map(({ role, content }) => ({ role, content })) // the API reads the last 6
     setTurns((t) => [...t, { role: 'user', content: question.trim() }])
     setDraft('')
     setThinking(true)
@@ -86,7 +94,7 @@ export default function Assistant() {
               <img src="/assist.png" alt="" className="bot-lg" />
               <h1>Sabeel Assist</h1>
               <p className="muted">
-                Posez vos questions sur les nids-de-poule du Grand Tunis : localisation exacte, priorités, retards,
+                Posez vos questions sur les nids-de-poule de votre bureau : localisation exacte, priorités, retards,
                 statistiques, méthodes de réparation. Réponses fondées uniquement sur les données Sabeel.
               </p>
               <div className="prompts">
@@ -105,9 +113,9 @@ export default function Assistant() {
                   {!!t.refs?.length && (
                     <div className="ref-cards">
                       {t.refs.map((r) => (
-                        <button key={r.report_id} className="ref-card" onClick={() => go('map', r.report_id)}>
-                          <span className="row-between"><b className="mono">{r.ref}</b><Severity score={r.score} /></span>
-                          <span className="ellipsis">{r.address}</span>
+                        <button key={r.pothole_id} className="ref-card" onClick={() => go('map', r.pothole_id)}>
+                          <span className="row-between"><b className="mono">{r.ref}</b><Severity score={r.severity} /></span>
+                          <span className="ellipsis">{r.address_label}</span>
                           <span className="row-between"><StatusBadge status={r.status} /><span className="link"><Icon name="map" size={13} /> Voir</span></span>
                         </button>
                       ))}
@@ -149,9 +157,9 @@ export default function Assistant() {
         <MapContainer center={[36.822, 10.2]} zoom={11} className="map" zoomControl={false}>
           <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
           {cited.map((r) => (
-            <CircleMarker key={r.report_id} center={[r.lat, r.lon]} radius={10}
-              pathOptions={{ color: '#fff', weight: 2, fillColor: severityColor(r.score), fillOpacity: 0.95 }}
-              eventHandlers={{ click: () => go('map', r.report_id) }}>
+            <CircleMarker key={r.pothole_id} center={[r.lat, r.lon]} radius={10}
+              pathOptions={{ color: '#fff', weight: 2, fillColor: severityColor(r.severity), fillOpacity: 0.95 }}
+              eventHandlers={{ click: () => go('map', r.pothole_id) }}>
               <Tooltip permanent direction="top" offset={[0, -10]}>{r.ref}</Tooltip>
             </CircleMarker>
           ))}

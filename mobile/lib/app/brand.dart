@@ -18,6 +18,7 @@ const statusLabels = {
   'sheet_sent': 'Transmis',
   'fixed': 'Réparé',
   'rejected': 'Classé',
+  'reopened': 'Rouvert',
 };
 const statusColors = {
   'new': Color(0xFF2F6DB5),
@@ -25,6 +26,7 @@ const statusColors = {
   'sheet_sent': Color(0xFFD0621B),
   'fixed': sabeelTeal,
   'rejected': sabeelMuted,
+  'reopened': Color(0xFFC8322B),
 };
 
 /// Severity 1-5 -> marker colour (same scale as the dashboard); grey = not scored.

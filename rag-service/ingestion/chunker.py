@@ -52,6 +52,8 @@ def chunk_document(entries: list[dict[str, Any]], doc_meta: dict[str, Any]) -> l
                 "is_placeholder": bool(doc_meta.get("is_placeholder", True)),
                 "severity_min": int(entry.get("severity_min", 3)),
                 "target_office": entry["target_office"],
+                # Who owns the road this rule is about: "municipal" | "state" | "any" (method rules).
+                "jurisdiction": {"Municipality": "municipal", "any": "any"}.get(entry["target_office"], "state"),
                 "doc_title": doc_meta.get("doc_title", ""),
                 "ingested_at": _now_iso(),
             }

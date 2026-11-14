@@ -13,12 +13,21 @@ from backend.app.config import settings
 logger = logging.getLogger(__name__)
 
 
-async def generate(lat: float, lon: float, score: int, road_type: Optional[str] = None) -> Optional[dict[str, Any]]:
-    """Returns the RAG service's response dict, or None on any failure --
-    callers must never let a RAG hiccup fail the whole POST /reports call."""
+async def generate(
+    lat: float,
+    lon: float,
+    score: int,
+    road_type: Optional[str] = None,
+    office_name: Optional[str] = None,
+    address: Optional[str] = None,
+    jurisdiction: Optional[str] = None,
+) -> Optional[dict[str, Any]]:
+    """Returns the RAG service's response dict, or None on any failure (the
+    sheet job then retries). `jurisdiction` ("municipal" | "state") limits the
+    legal rules the LLM is shown to the road owner's."""
     payload: dict[str, Any] = {"lat": lat, "lon": lon, "score": score}
-    if road_type:
-        payload["road_type"] = road_type
+    extras = {"road_type": road_type, "office_name": office_name, "address": address, "jurisdiction": jurisdiction}
+    payload.update({k: v for k, v in extras.items() if v})
 
     try:
         async with httpx.AsyncClient(timeout=settings.rag_timeout_s) as client:

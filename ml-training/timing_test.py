@@ -1,41 +1,49 @@
-"""
-Rough CPU timing test required by the Action Plan.
-Share the average number with WP3 this week.
-Target: under 250 ms on a normal CPU.
-"""
+"""CPU latency of the production inference path (decode + letterbox + model + NMS).
 
+    python timing_test.py                       # the 32 seed photos
+    python timing_test.py path/to/images        # any folder
+    MODEL_PATH=models/pothole_model_int8.onnx python timing_test.py
+
+Prints the median and p90 over every image after one warm-up call, plus how
+many seed photos the model finds. Target (cahier §2.2): under 250 ms.
+"""
+import os
+import platform
+import statistics
+import sys
 import time
 from pathlib import Path
+
 from inference import infer
 
-def main():
-    # Use a real image from the validation set
-    val_dir = Path("datasets/yolo_annotated_potholes/images/val")
-    imgs = list(val_dir.glob("*.jpg")) + list(val_dir.glob("*.png"))
+DEFAULT = Path(__file__).resolve().parent.parent / "backend" / "app" / "static" / "photos" / "_seed"
+
+
+def main() -> None:
+    folder = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT
+    imgs = sorted(p for p in folder.iterdir() if p.suffix.lower() in (".jpg", ".jpeg", ".png"))
     if not imgs:
-        print("No validation images found!")
-        return
+        raise SystemExit(f"No images in {folder}")
+    infer(imgs[0].read_bytes())  # warm-up: loads the ONNX session
 
-    image_bytes = imgs[0].read_bytes()
-    print(f"Using test image: {imgs[0].name}")
-
-    # Warm-up
-    _ = infer(image_bytes)
-
-    times = []
-    for i in range(10):
+    times, found, false_alarms = [], 0, 0
+    for p in imgs:
+        data = p.read_bytes()
         t0 = time.perf_counter()
-        result = infer(image_bytes)
-        elapsed = (time.perf_counter() - t0) * 1000
-        times.append(elapsed)
-        print(f"  Run {i+1}: {elapsed:.1f} ms | score={result['score']} | boxes={len(result['boxes'])}")
+        r = infer(data)
+        times.append((time.perf_counter() - t0) * 1000)
+        found += r["score"] is not None and not p.name.startswith("fp_")
+        false_alarms += r["score"] is not None and p.name.startswith("fp_")
 
-    avg = sum(times) / len(times)
-    print("\n==============================")
-    print(f"Average inference time (CPU): {avg:.1f} ms")
-    print(f"Min / Max: {min(times):.1f} / {max(times):.1f} ms")
-    print("==============================")
-    print("→ Share this average with WP3 this week.")
+    p90 = statistics.quantiles(times, n=10)[-1] if len(times) > 1 else times[0]
+    print(f"model:   {os.getenv('MODEL_PATH', 'models/pothole_model.onnx')}")
+    print(f"machine: {platform.processor() or platform.machine()} · {os.cpu_count()} logical CPUs")
+    print(f"images:  {len(imgs)} from {folder}")
+    print(f"median:  {statistics.median(times):.1f} ms   p90: {p90:.1f} ms   min/max: {min(times):.1f}/{max(times):.1f} ms")
+    if folder == DEFAULT:
+        fps = sum(1 for p in imgs if p.name.startswith("fp_"))
+        print(f"seed photos: potholes found {found}/{len(imgs) - fps}, false alarms {false_alarms}/{fps}")
+
 
 if __name__ == "__main__":
     main()

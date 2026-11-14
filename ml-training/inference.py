@@ -23,6 +23,8 @@ from severity_scoring import score_from_detections
 
 # Shared config (Section 4.6)
 MODEL_PATH = Path(os.getenv("MODEL_PATH", "models/pothole_model.onnx"))
+# 0 lets ONNX Runtime pick (all physical cores); set it to the server's vCPU count on Cloud Run.
+INTRA_OP_THREADS = int(os.getenv("ONNX_INTRA_OP_THREADS", "0"))
 # Tuned on the validation split (max F1), see ml-training/README.md
 CONF_THRESHOLD = float(os.getenv("CONF_THRESHOLD", "0.28"))
 NMS_IOU = 0.45
@@ -38,7 +40,9 @@ def _get_session():
     if _session is None:
         if not MODEL_PATH.exists():
             raise FileNotFoundError(f"ONNX model not found at {MODEL_PATH}")
-        _session = ort.InferenceSession(str(MODEL_PATH), providers=["CPUExecutionProvider"])
+        opts = ort.SessionOptions()
+        opts.intra_op_num_threads = INTRA_OP_THREADS
+        _session = ort.InferenceSession(str(MODEL_PATH), sess_options=opts, providers=["CPUExecutionProvider"])
         inp = _session.get_inputs()[0]
         _input_name = inp.name
         _imgsz = int(inp.shape[2])  # fixed square input baked into the export (640, 800, ...)
@@ -91,9 +95,15 @@ def _postprocess(outputs, orig_shape, ratio, pad, conf_thres=CONF_THRESHOLD):
     return sorted(boxes, key=lambda b: b["conf"], reverse=True)
 
 
-def infer(image: bytes) -> Dict[str, Any]:
+def warm_up() -> None:
+    """Loads the ONNX session (~0.5 s) so the first real request doesn't pay for it."""
+    _get_session()
+
+
+def infer(image: bytes, source: str = "manual") -> Dict[str, Any]:
     """
-    Exact interface required by Section 4.3 of the Action Plan.
+    Interface of Section 4.3 of the Action Plan. `source` (manual | web |
+    driving_mode) selects the severity bands, see severity_scoring.py.
     """
     t0 = time.perf_counter()
 
@@ -106,13 +116,13 @@ def infer(image: bytes) -> Dict[str, Any]:
     confidences = [b["conf"] for b in boxes]
     overall_conf = float(max(confidences)) if confidences else 0.0
 
-    score = score_from_detections(boxes, orig_w, orig_h, conf_threshold=CONF_THRESHOLD)
+    score = score_from_detections(boxes, orig_w, orig_h, conf_threshold=CONF_THRESHOLD, source=source)
 
     inference_ms = (time.perf_counter() - t0) * 1000.0
 
-    # Clean boxes for the contract (no conf field)
+    # Boxes keep their confidence: the dashboard draws them over the photo.
     clean_boxes = [
-        {"x": b["x"], "y": b["y"], "w": b["w"], "h": b["h"], "class": "pothole"}
+        {"x": b["x"], "y": b["y"], "w": b["w"], "h": b["h"], "conf": round(b["conf"], 3), "class": "pothole"}
         for b in boxes
     ]
 
@@ -120,6 +130,7 @@ def infer(image: bytes) -> Dict[str, Any]:
         "score": score if score > 0 else None,
         "confidence": overall_conf if overall_conf > 0 else None,
         "boxes": clean_boxes,
+        "image_size": [orig_w, orig_h],
         "inference_ms": round(inference_ms, 2),
     }
 

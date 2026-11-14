@@ -7,12 +7,15 @@ datasets/
 *.jpg
 *.jpeg
 *.png
+# evaluation photos stay on Drive; labels and manifests are committed
+!eval/**/.gitkeep
 *.xml
 
 # Training outputs
 runs/
 *.pt
-!models/*.onnx          # keep the final ONNX
+# keep the final ONNX model
+!models/*.onnx
 
 # Python
 __pycache__/

@@ -1,11 +1,6 @@
-path: .                                    
-train:
-  - datasets/yolo_annotated_potholes/images/train
-  - datasets/yolo_rdd2022_pothole/images/train
-val:
-  - datasets/yolo_annotated_potholes/images/val
-  - datasets/yolo_rdd2022_pothole/images/val
-
-nc: 1
+path: datasets/sabeel_v2   # written by build_dataset.py (which also writes its own data.yaml there)
+train: train/images
+val: val/images
+test: test/images
 names:
   0: pothole

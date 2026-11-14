@@ -26,7 +26,10 @@ _OFFICE_LABELS = {
 }
 
 
-def build_prompt(chunks: list[dict], score: int, road_type: str, lat: float, lon: float) -> str:
+def build_prompt(
+    chunks: list[dict], score: int, road_type: str, lat: float, lon: float,
+    office_name: str | None = None, address: str | None = None,
+) -> str:
     context_lines = []
     for chunk in chunks:
         meta = chunk["metadata"]
@@ -38,12 +41,13 @@ def build_prompt(chunks: list[dict], score: int, road_type: str, lat: float, lon
 Un nid de poule a été signalé et confirmé :
 - Sévérité : {score}/5
 - Type de route : {road_type}
-- Position : {lat}, {lon}
+- Position : {lat}, {lon}{f" ({address})" if address else ""}
+- Bureau destinataire : {office_name or "à déterminer selon les règles"}
 
 Règles disponibles (cite UNIQUEMENT ces identifiants, n'invente jamais un identifiant qui n'est pas dans cette liste) :
 {context_block}
 
-Rédige une fiche de travaux courte (5-8 lignes) en français : nature du problème, gravité, action recommandée, bureau responsable. Si aucune règle ci-dessus ne s'applique clairement, dis-le explicitement.
+Rédige une fiche de travaux courte (5-8 lignes) en français : nature du problème, gravité, méthode de réparation recommandée (d'après les règles techniques ci-dessus), signalisation, bureau responsable et base légale. Écris en texte brut, sans markdown (pas d'astérisques ni de titres). Si aucune règle ci-dessus ne s'applique clairement, dis-le explicitement.
 
 Termine ta réponse par une ligne exacte au format :
 Références: ID1, ID2
@@ -52,12 +56,34 @@ en listant uniquement les identifiants des règles ci-dessus que tu as réelleme
 
 
 def _do_chat_completion(prompt: str, timeout_s: float, model: str, max_tokens: int) -> str:
+    if config.LLM_BASE_URL:  # OpenAI-compatible provider (Groq, OpenRouter, ...)
+        client = InferenceClient(base_url=config.LLM_BASE_URL, api_key=config.HF_API_TOKEN, timeout=timeout_s)
+        response = client.chat_completion(
+            model=model, messages=[{"role": "user", "content": prompt}], max_tokens=max_tokens,
+        )
+        return response.choices[0].message.content
     client = InferenceClient(model=model, token=config.HF_API_TOKEN, timeout=timeout_s)
     response = client.chat_completion(
         messages=[{"role": "user", "content": prompt}],
         max_tokens=max_tokens,
     )
     return response.choices[0].message.content
+
+
+class LLMRateLimited(Exception):
+    """The provider's per-minute quota is used up; try again after `retry_after_s`."""
+
+    def __init__(self, retry_after_s: float):
+        super().__init__(f"LLM rate-limited, retry after {retry_after_s:.0f} s")
+        self.retry_after_s = retry_after_s
+
+
+def _retry_after(exc: Exception) -> float:
+    headers = getattr(getattr(exc, "response", None), "headers", None) or {}
+    try:
+        return float(headers.get("retry-after", 30))
+    except (TypeError, ValueError):
+        return 30.0
 
 
 def call_llm(
@@ -84,6 +110,9 @@ def call_llm(
         logger.warning("HF Inference API call exceeded %.1fs wall-clock timeout; falling back.", timeout_s)
         return None
     except HfHubHTTPError as exc:
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        if status == 429:
+            raise LLMRateLimited(_retry_after(exc)) from exc
         logger.warning("HF Inference API call failed: %s", exc)
         return None
     except Exception as exc:  # noqa: BLE001 - any failure must fall back cleanly
@@ -92,21 +121,36 @@ def call_llm(
 
 
 def pick_target_office(chunks: list[dict]) -> str:
-    if not chunks:
-        return "Municipality"
-    top = chunks[0]["metadata"]
-    office = top.get("target_office", "Municipality")
-    return office if office in config.TARGET_OFFICES else "Municipality"
+    """The office named by the best-ranked jurisdiction rule (method rules say "any")."""
+    for chunk in chunks:
+        office = chunk["metadata"].get("target_office")
+        if office in config.TARGET_OFFICES:
+            return office
+    return "Municipality"
+
+
+OFFICE_LABELS_FR = {
+    "Municipality": "Municipalité",
+    "DGPC": "Direction Générale des Ponts et Chaussées (DGPC)",
+    "Ministry of Equipment": "Ministère de l'Équipement",
+}
+
+
+SEVERITY_FR = {1: "faible", 2: "faible", 3: "moyenne", 4: "élevée", 5: "dangereuse"}
+
+
+def _first(chunks: list[dict], prefixes: tuple[str, ...]) -> dict | None:
+    return next((c for c in chunks if c["metadata"]["rule_id"].startswith(prefixes)), None)
 
 
 def render_template_fallback(
-    chunks: list[dict], score: int, road_type: str, lat: float, lon: float, target_office: str
+    chunks: list[dict], score: int, road_type: str, lat: float, lon: float, target_office: str,
+    office_name: str | None = None,
 ) -> str:
-    """Deterministic, structurally-cannot-fabricate sheet: stitches real
-    retrieved excerpts directly. Used whenever the LLM path fails or fails
-    citation validation, and as the direct path when no rules match at all.
-    """
-    office_label = _OFFICE_LABELS.get(target_office, target_office)
+    """Deterministic sheet that cannot fabricate: every sentence below either
+    comes from the request or is a retrieved rule's own text. Used whenever
+    the LLM is unavailable or fails citation validation."""
+    office_label = office_name or _OFFICE_LABELS.get(target_office, target_office)
 
     if not chunks:
         return (
@@ -117,17 +161,31 @@ def render_template_fallback(
             f"Transmis à : {office_label}."
         )
 
+    law = next((c for c in chunks if c["metadata"].get("target_office") in config.TARGET_OFFICES), None)
+    method = _first(chunks, ("FHWA-99-168-S3.2.2",) if score >= 3 else ("FHWA-99-168-S3.2.1",)) or _first(
+        chunks, ("FHWA-99-168-S3.2",))
+    signage = _first(chunks, ("FHWA-99-168-S4.1",))
+    urgency = _first(chunks, ("FHWA-99-168-S2",))
+    used = [c for c in (law, method, signage, urgency) if c] or chunks
+
+    def body(c: dict) -> str:
+        return " ".join(c["document"].split())
+
     lines = [
-        f"Nid de poule confirmé — sévérité {score}/5, route de type '{road_type}'.",
-        f"Position : {lat:.5f}, {lon:.5f}.",
-        "Règles applicables :",
+        f"FICHE DE TRAVAUX — nid-de-poule confirmé, gravité {score}/5 ({SEVERITY_FR.get(score, '?')}).",
+        f"Localisation : {lat:.5f}, {lon:.5f} — route de type « {road_type} ».",
+        f"Destinataire : {office_label}.",
     ]
-    for chunk in chunks:
-        meta = chunk["metadata"]
-        excerpt = chunk["document"][:200]
-        lines.append(f"- [{meta['rule_id']}] {meta['source']} : {excerpt}")
-    lines.append(f"Action recommandée : intervention à programmer selon les règles ci-dessus.")
-    lines.append(f"Transmis à : {office_label}.")
-    ref_ids = ", ".join(c["metadata"]["rule_id"] for c in chunks)
-    lines.append(f"Références: {ref_ids}")
+    if law:
+        lines.append(f"Compétence [{law['metadata']['rule_id']}] : {body(law)}")
+    if urgency and score >= 4:
+        lines.append(f"Urgence [{urgency['metadata']['rule_id']}] : {body(urgency)}")
+    if method:
+        lines.append(f"Méthode [{method['metadata']['rule_id']}] : {body(method)}")
+    if signage:
+        lines.append(f"Signalisation [{signage['metadata']['rule_id']}] : {body(signage)}")
+    if not (law or method):
+        lines += [f"- [{c['metadata']['rule_id']}] {c['metadata']['source']} : {body(c)[:300]}" for c in chunks]
+    lines.append("Fiche générée à partir des règles citées (rédaction automatique indisponible) — à relire avant approbation.")
+    lines.append("Références: " + ", ".join(c["metadata"]["rule_id"] for c in used))
     return "\n".join(lines)

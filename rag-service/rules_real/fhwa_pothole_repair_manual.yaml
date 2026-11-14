@@ -1,0 +1,132 @@
+doc_title: "FHWA-RD-99-168 — Materials and Procedures for Repair of Potholes in Asphalt-Surfaced Pavements, Manual of Practice (1999)"
+is_placeholder: false
+# Repair methods. Replaces the Sprint 1 placeholder engineering rules (PH-*).
+#
+# Source: T.P. Wilson and A.R. Romine, Federal Highway Administration (USA),
+# report FHWA-RD-99-168, update of the SHRP manual SHRP-H-348, based on the
+# SHRP H-106 field trials (1991-1996, eight sites in the US and Canada).
+# Public domain (US federal publication). Retrieved 2026-11-07 from
+# https://rosap.ntl.bts.gov/view/dot/14190 .
+#
+# The texts below are faithful French translations of the sections cited;
+# each `note` keeps the original English wording. No Tunisian pothole-repair
+# guide is published online; this manual is the reference most road agencies
+# use for cold-mix patching. road_type "all" = applies to every road type.
+
+rules:
+  - rule_id: FHWA-99-168-S2
+    road_type: all
+    section: "2.0 Need for Pothole Repair"
+    lang: fr
+    severity_min: 4
+    target_office: any
+    source: "FHWA-RD-99-168, Manual of Practice (1999), section 2.0 « Need for Pothole Repair »"
+    note: "Original: 'Regardless of the climatic conditions, the potential safety and rideability problems that could result from the unrepaired distress must be considered when deciding whether a pothole should be patched. A highway agency must repair potentially hazardous potholes as soon as it becomes aware of them.'"
+    text: >
+      Quelles que soient les conditions climatiques, les problèmes de sécurité
+      et de confort de roulement que peut causer la dégradation non réparée
+      doivent être pris en compte pour décider de colmater un nid-de-poule.
+      Une administration routière doit réparer les nids-de-poule
+      potentiellement dangereux dès qu'elle en a connaissance. La décision
+      dépend du niveau de trafic, du délai avant la réhabilitation prévue et de
+      la disponibilité du personnel, du matériel et des matériaux.
+
+  - rule_id: FHWA-99-168-S3.2.1
+    road_type: all
+    section: "3.2.1 Throw-and-roll"
+    lang: fr
+    severity_min: 1
+    target_office: any
+    source: "FHWA-RD-99-168, Manual of Practice (1999), section 3.2.1 « Throw-and-roll »"
+    note: "Original steps: '1. Place the material into a pothole (which may or may not be filled with water or debris). 2. Compact the patch using truck tires. 3. Verify that the compacted patch has some crown (between 3 and 6 mm). 4. Move on to the next pothole. 5. Open the repaired section to traffic as soon as maintenance workers and equipment are cleared from the area.' The manual calls it 'a superior alternative to the traditional throw-and-go method'."
+    text: >
+      Méthode « déposer et compacter » (throw-and-roll), intervention rapide à
+      l'enrobé à froid : 1. déposer le matériau dans le nid-de-poule (même s'il
+      contient de l'eau ou des débris) ; 2. compacter le colmatage avec les
+      roues du camion ; 3. vérifier que le colmatage compacté présente un léger
+      bombement (3 à 6 mm) ; 4. passer au nid-de-poule suivant ; 5. rouvrir à
+      la circulation dès que l'équipe et le matériel ont quitté la zone. Le
+      compactage (1 à 2 minutes de plus par nid-de-poule) donne un colmatage
+      plus serré que le simple dépôt de matériau.
+
+  - rule_id: FHWA-99-168-S3.2.2
+    road_type: all
+    section: "3.2.2 Semi-permanent"
+    lang: fr
+    severity_min: 3
+    target_office: any
+    source: "FHWA-RD-99-168, Manual of Practice (1999), section 3.2.2 « Semi-permanent »"
+    note: "Original: 'The semi-permanent repair method is considered one of the best for repairing potholes, short of full-depth removal and replacement. 1. Remove water and debris from the pothole. 2. Square-up the sides of the patch area until vertical sides exist in reasonably sound pavement. 3. Place the mix. 4. Compact with a device smaller than the patch area. (Single-drum vibratory rollers and vibratory plate compactors work best.) 5. Open the repaired section to traffic as soon as maintenance workers and equipment are cleared from the area.'"
+    text: >
+      Réparation semi-permanente, considérée comme l'une des meilleures
+      méthodes après la dépose et reconstruction sur toute l'épaisseur :
+      1. évacuer l'eau et les débris du nid-de-poule ; 2. découper les bords de
+      la zone à réparer jusqu'à obtenir des parois verticales dans une chaussée
+      saine (scie à chaussée ou fraiseuse) ; 3. mettre en place l'enrobé ;
+      4. compacter avec un engin plus petit que la zone réparée (cylindre
+      vibrant monobille ou plaque vibrante) ; 5. rouvrir à la circulation dès
+      que l'équipe et le matériel ont quitté la zone. Elle demande plus de
+      personnel et de matériel mais donne un colmatage très bien compacté.
+
+  - rule_id: FHWA-99-168-S3.2.3
+    road_type: all
+    section: "3.2.3 Spray injection"
+    lang: fr
+    severity_min: 3
+    target_office: any
+    source: "FHWA-RD-99-168, Manual of Practice (1999), section 3.2.3 « Spray injection »"
+    note: "Original: '1. Blow water and debris from the pothole. 2. Spray a tack coat of binder on the sides and bottom of the pothole. 3. Blow asphalt and aggregate into the pothole. 4. Cover the patched area with a layer of aggregate. 5. Open the repaired section to traffic as soon as maintenance workers and equipment are cleared from area. This procedure requires no compaction after the cover aggregate has been placed.'"
+    text: >
+      Réparation par injection (spray-injection), si un équipement d'injection
+      est disponible : 1. chasser l'eau et les débris par soufflage ;
+      2. pulvériser une couche d'accrochage de liant sur les parois et le fond ;
+      3. projeter le liant et les granulats dans le nid-de-poule ; 4. recouvrir
+      d'une couche de granulats ; 5. rouvrir à la circulation dès que l'équipe
+      a quitté la zone. Aucun compactage n'est nécessaire après la couche de
+      granulats. Coût d'équipement élevé, mais productivité élevée et coût de
+      matériau faible.
+
+  - rule_id: FHWA-99-168-S3.2.4
+    road_type: all
+    section: "3.2.4 Edge seal"
+    lang: fr
+    severity_min: 2
+    target_office: any
+    source: "FHWA-RD-99-168, Manual of Practice (1999), section 3.2.4 « Edge seal »"
+    note: "Original: steps 1-4 as throw-and-roll, then '5. Once the repaired section has dried, place a ribbon of asphaltic tack material on top of the patch edge (tack material should be placed on both patch and pavement surfaces). 6. Place a layer of sand on the tack material to prevent tracking by vehicle tires.' 'This method requires a second pass through the repair area, but can improve patch performance in older pavements with a lot of cracking.'"
+    text: >
+      Scellement des bords (edge seal), pour les chaussées anciennes très
+      fissurées : colmatage comme en « déposer et compacter », puis, une fois
+      la zone sèche, pose d'un cordon de liant d'accrochage sur le bord du
+      colmatage (à cheval sur le colmatage et la chaussée) et d'une couche de
+      sable pour éviter l'arrachement par les pneus. Demande un second passage
+      de l'équipe, mais empêche l'eau de pénétrer et améliore la tenue.
+
+  - rule_id: FHWA-99-168-S1.1
+    road_type: all
+    section: "1.1 Scope of Manual"
+    lang: fr
+    severity_min: 3
+    target_office: any
+    source: "FHWA-RD-99-168, Manual of Practice (1999), section 1.1 « Scope of Manual »"
+    note: "Original: 'The use of hot-mix asphalt concrete (AC), although recognized as a preferred alternative for patching operations, is not covered in this manual.' and 'The patching operations described in this manual can be performed in any weather.'"
+    text: >
+      L'enrobé à chaud est reconnu comme la solution préférable pour les
+      opérations de colmatage lorsqu'il est disponible ; les méthodes à
+      l'enrobé à froid (déposer et compacter, semi-permanente, injection,
+      scellement des bords) peuvent être appliquées par tous les temps, y
+      compris en intervention d'urgence.
+
+  - rule_id: FHWA-99-168-S4.1
+    road_type: all
+    section: "4.1 Traffic Control"
+    lang: fr
+    severity_min: 3
+    target_office: any
+    source: "FHWA-RD-99-168, Manual of Practice (1999), section 4.1 « Traffic Control »"
+    note: "Original: 'Whenever any pothole patching operation is performed, adequate traffic control must be provided. This ensures a safe working environment for the maintenance crew and safe travel lanes for vehicles. Traffic control operations should disturb the flow of traffic as little as possible.'"
+    text: >
+      Toute opération de colmatage de nid-de-poule doit s'accompagner d'une
+      signalisation et d'une gestion du trafic adaptées, pour garantir la
+      sécurité de l'équipe d'entretien et des usagers, en perturbant la
+      circulation le moins possible.
