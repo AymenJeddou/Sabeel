@@ -235,7 +235,7 @@ Six features (F1–F6) are specified below. Each has a user story, functional ru
 2. Retrieve the top-5 matching rule chunks from Chroma (multilingual embeddings), discarding matches below a similarity floor.
 3. Build a prompt that forces the LLM to cite a rule identifier for every claim and to answer "not enough rules" when nothing matches.
 4. Call the primary LLM (Llama 3.1 8B Instruct), fall back to the backup (Qwen 2.5 72B Instruct), then to a deterministic template if output is invalid.
-5. A citation guard rejects any citation that does not exist in the retrieved set.
+5. A citation guard rejects any citation that does not exist in the retrieved set. It reads the last `Références :` line (the body may mention a reference too), ignores markdown styling, and counts each rule once; one unknown id discards the whole answer for the rule-only template.
 6. Return `sheet_text`, `rule_citations`, `target_office`, `road_type`.
 
 > **Rationale.** A fixed template cannot adapt to road type or quote the right rule; an unconstrained LLM can invent rules — unacceptable in an official document. RAG restricts the model to real text, and every line stays traceable to its source.
